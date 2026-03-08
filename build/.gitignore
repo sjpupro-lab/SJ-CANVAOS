@@ -14,8 +14,20 @@ tests/test_gate
 tests/test_canvasfs
 tests/test_scheduler
 tests/test_cvp
+tests/test_delta_merge
+tests/test_bridge
+tests/test_patchB
+tests/test_patchC
+tests/test_patchD
+tests/test_patchE
+tests/test_patchF
+tests/test_patchG
+tests/test_patchG_sanitize
+tests/test_patchH
+tests/test_patchH_sanitize
 tests/*_asan
 examples/hello_canvas
+examples/demo_patchF
 canvasos_launcher
 
 # Build artifacts

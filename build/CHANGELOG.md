@@ -2,6 +2,25 @@
 
 All notable changes to CanvasOS are documented in this file.
 
+## [v1.0.8-patchH] — 2026-03-08
+
+### Deterministic OS Tester
+- `tests/test_patchH.c`: 10-test deterministic OS stress/benchmark suite
+- H1: DK-1 tick boundary guard lifecycle verification
+- H2: DK-2/4/5 integer clamp (DK_CLAMP_U8/U16/U32) and noise-floor (DK_ABSORB_NOISE) primitives
+- H3: DK-3 fixed reduction order (dk_cell_index strict ascending invariant)
+- H4: Stress test — 50 identical runs produce identical canvas hash
+- H5: Stress test — 100-tick sequence reproducibility across two independent contexts
+- H6: Gate + mutation order invariance (DK-3 compliance)
+- H7: CVP save/load 3-round stress (deterministic persistence)
+- H8: Timewarp snapshot hash invariance + CVP-based state restoration
+- H9: Benchmark — tick throughput measurement (ticks/s, ms/tick, final hash)
+- H10: Full DK-1~5 integration regression gate
+- `make patchH_test` and `make sanitize_patchH` build targets added
+- Patch-H included in `make test_all`
+- ASan/UBSan CLEAN
+- 160 total tests, 0 failures
+
 ## [v1.0.7-patchG] — 2026-03-08
 
 ### Release Quality Gate
