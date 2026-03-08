@@ -122,7 +122,7 @@ $(TEST_TERVAS): tests/test_tervas.c $(TERVAS_SRC) $(CORE_SRC)
 test_tervas: $(TEST_TERVAS)
 	./$(TEST_TERVAS)
 
-test_all: tests/test_phase6 tests/test_tervas tests/test_phase8 tests/test_phase9 tests/test_phase10 tests/test_bridge tests/test_patchB tests/test_patchC tests/test_patchD tests/test_patchE tests/test_patchF tests/test_patchG
+test_all: tests/test_phase6 tests/test_tervas tests/test_phase8 tests/test_phase9 tests/test_phase10 tests/test_bridge tests/test_patchB tests/test_patchC tests/test_patchD tests/test_patchE tests/test_patchF tests/test_patchG tests/test_patchH
 	@echo "=== Phase-6 ==="
 	@./tests/test_phase6
 	@echo "=== Phase-7 Tervas ==="
@@ -147,6 +147,8 @@ test_all: tests/test_phase6 tests/test_tervas tests/test_phase8 tests/test_phase
 	@./$(TEST_PATCHF)
 	@echo "=== Patch-G Release Quality Gate ==="
 	@./$(TEST_PATCHG)
+	@echo "=== Patch-H Deterministic OS Tester ==="
+	@./$(TEST_PATCHH)
 
 tervas: $(TERVAS_BIN)
 
@@ -330,6 +332,31 @@ $(TEST_PATCHG): tests/test_patchG.c $(P10_SRC) $(P8_KERN) $(P9_VM) $(CORE_SRC)
 
 patchG_test: $(TEST_PATCHG)
 	./$(TEST_PATCHG)
+
+# ─────────────────────────────────────────────────────────────────
+# Patch-H: Deterministic OS Tester (stress + benchmark)
+# ─────────────────────────────────────────────────────────────────
+
+TEST_PATCHH = tests/test_patchH
+
+$(TEST_PATCHH): tests/test_patchH.c $(P10_SRC) $(P8_KERN) $(P9_VM) $(CORE_SRC)
+	$(CC) $(CFLAGS) -o $@ tests/test_patchH.c $(P10_SRC) $(P8_KERN) $(P9_VM) $(CORE_SRC) $(LDFLAGS)
+
+patchH_test: $(TEST_PATCHH)
+	./$(TEST_PATCHH)
+
+# Sanitizer build for Patch-H
+SANITIZE_PATCHH_BIN = tests/test_patchH_sanitize
+
+$(SANITIZE_PATCHH_BIN): tests/test_patchH.c $(P10_SRC) $(P8_KERN) $(P9_VM) $(CORE_SRC)
+	$(CC) $(SFLAGS) -o $@ tests/test_patchH.c $(P10_SRC) $(P8_KERN) $(P9_VM) $(CORE_SRC) $(SLDFLAGS)
+
+sanitize_patchH: $(SANITIZE_PATCHH_BIN)
+	@echo "=== Patch-H ASan/UBSan Test ==="
+	@./$(SANITIZE_PATCHH_BIN)
+	@echo "=== Patch-H Sanitizer: CLEAN ==="
+
+.PHONY: patchH_test sanitize_patchH
 
 # Sanitizer build (ASan + UBSan)
 SANITIZE_BIN = tests/test_patchG_sanitize
