@@ -109,7 +109,7 @@ TERVAS_SRC = src/tervas/tervas_core.c     \
 
 TERVAS_BIN      = tervas
 TEST_TERVAS     = tests/test_tervas
-TERVAS_CFLAGS   = $(CFLAGS) -Iinclude/tervas
+TERVAS_CFLAGS   = $(CFLAGS)
 
 $(TERVAS_BIN): $(TERVAS_SRC) src/tervas/tervas_main.c $(CORE_SRC)
 	$(CC) $(TERVAS_CFLAGS) -o $@ \
@@ -380,4 +380,16 @@ release_check: test_all sanitize
 release:
 	bash scripts/release.sh $$(cat VERSION)
 
-.PHONY: patchG_test sanitize release_check release
+# ─────────────────────────────────────────────────────────────────
+# DevDictionary Dashboard — generate build status JSON
+# ─────────────────────────────────────────────────────────────────
+
+dashboard: test_all
+	bash scripts/gen_build_status.sh
+	@echo ""
+	@echo "╔══════════════════════════════════════════╗"
+	@echo "║  DevDict Dashboard: devdict_site/        ║"
+	@echo "║  Open index.html → Build Status tab     ║"
+	@echo "╚══════════════════════════════════════════╝"
+
+.PHONY: dashboard patchG_test sanitize release_check release

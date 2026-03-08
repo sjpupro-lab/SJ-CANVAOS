@@ -2,8 +2,8 @@
 #define TERVAS_BRIDGE_H
 #include <stddef.h>
 #include "tervas_core.h"
-#include "../../include/canvasos_engine_ctx.h"
-#include "../../include/engine_time.h"
+#include "canvasos_engine_ctx.h"
+#include "engine_time.h"
 
 int tervas_bridge_attach  (Tervas *tv, EngineContext *eng);
 int tervas_bridge_snapshot(Tervas *tv, EngineContext *eng, uint32_t tick);

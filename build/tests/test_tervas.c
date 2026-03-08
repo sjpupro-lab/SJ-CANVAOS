@@ -21,12 +21,12 @@
 #include "../include/canvas_determinism.h"
 #include "../include/canvas_bh_compress.h"
 #include "../include/engine_time.h"
-#include "../include/tervas/tervas_core.h"
-#include "../include/tervas/tervas_bridge.h"
-#include "../include/tervas/tervas_cli.h"
-#include "../include/tervas/tervas_projection.h"
-#include "../include/tervas/tervas_render_cell.h"
-#include "../include/tervas/tervas_dispatch.h"
+#include "../include/tervas_core.h"
+#include "../include/tervas_bridge.h"
+#include "../include/tervas_cli.h"
+#include "../include/tervas_projection.h"
+#include "../include/tervas_render_cell.h"
+#include "../include/tervas_dispatch.h"
 
 static Cell      g_cells[CANVAS_W * CANVAS_H];
 static GateState g_gates[TILE_COUNT];

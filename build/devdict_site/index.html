@@ -255,12 +255,26 @@ body::before{
   </div>
 
   <div class="nav">
+    <div class="nav-label">Dashboard</div>
+    <button data-tab="BuildStatus" class="active" style="border-color:rgba(62,245,192,.4);color:var(--accent);">▣ Build Status</button>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="nav">
     <div class="nav-label">Core</div>
-    <button data-tab="Home" class="active">◈ 전체 (Home)</button>
+    <button data-tab="Home">◈ 전체 (Home)</button>
     <button data-tab="Core">⬡ Core / Types</button>
     <button data-tab="Engine">⚙ Engine / WH/BH</button>
     <button data-tab="Filesystem">▤ CanvasFS</button>
     <button data-tab="IO">◎ CVP I/O</button>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="nav">
+    <div class="nav-label">Phase 7</div>
+    <button data-tab="Tervas" style="border-color:rgba(0,200,200,.3);color:#38b4ff;">◉ Tervas Terminal</button>
   </div>
 
   <div class="sep"></div>
@@ -459,6 +473,13 @@ function render(){
   let items = DATA;
 
   /* tab filter */
+  if(activeTab==='BuildStatus'){
+    document.getElementById('arch-map').style.display='none';
+    document.getElementById('cap-bar').style.display='none';
+    renderBuildStatus();
+    return;
+  }
+
   if(activeTab==='Home'){
     /* 전체 — arch map, cap bar 표시 */
     document.getElementById('arch-map').style.display='';
@@ -468,7 +489,17 @@ function render(){
     document.getElementById('cap-bar').style.display='none';
   }
 
-  if(activeTab==='Phase5-DK')  items=items.filter(x=>x.tags&&x.tags.includes('dk'));
+  if(activeTab==='Tervas'){
+    /* Tervas entries from data.js DOCS.tervas */
+    if(typeof DOCS!=='undefined' && DOCS.tervas){
+      items=DOCS.tervas.map(e=>({
+        kind:e.kind||'',key:e.name,group:'Tervas',
+        desc:e.desc||'',loc:e.loc||'',tags:'tervas',
+        keywords:e.sig||'',values:e.sig||'',channel:e.channel||'B'
+      }));
+    } else { items=[]; }
+  }
+  else if(activeTab==='Phase5-DK')  items=items.filter(x=>x.tags&&x.tags.includes('dk'));
   else if(activeTab==='Phase5-BH')  items=items.filter(x=>x.tags&&x.tags.includes('bh'));
   else if(activeTab==='Phase5-MG')  items=items.filter(x=>x.tags&&x.tags.includes('merge'));
   else if(activeTab==='Docs')       items=items.filter(x=>x.group==='Docs');
@@ -518,4 +549,109 @@ document.querySelectorAll('.nav button[data-tab]').forEach(b=>{
   });
 });
 
-document.getElementById('search').addEventListe
+document.getElementById('search').addEventListener('input',()=>render());
+
+/* ── Build Status Dashboard ── */
+let _buildStatus = null;
+async function loadBuildStatus(){
+  if(_buildStatus) return _buildStatus;
+  try{
+    const r = await fetch('data/build_status.json');
+    _buildStatus = await r.json();
+  }catch(e){
+    _buildStatus = null;
+  }
+  return _buildStatus;
+}
+
+async function renderBuildStatus(){
+  const bs = await loadBuildStatus();
+  const meta = document.getElementById('meta');
+  const cards = document.getElementById('cards');
+
+  if(!bs){
+    meta.innerHTML='<span class="hi">Build Status</span>';
+    cards.innerHTML='<div class="empty">build_status.json 을 찾을 수 없습니다.<br><code>bash scripts/gen_build_status.sh</code> 를 실행하세요.</div>';
+    return;
+  }
+
+  const allPass = bs.total_fail === 0;
+  const statusColor = allPass ? '#50c88a' : '#ff5566';
+  const statusText = allPass ? 'ALL PASS' : `${bs.total_fail} FAIL`;
+  const total = bs.total_pass + bs.total_fail + bs.total_skip;
+
+  meta.innerHTML=`<span class="hi">Build Dashboard</span> · ${esc(bs.version)}`;
+
+  let html = '';
+
+  /* Summary card */
+  html += `<div style="
+    border:1px solid ${statusColor}40;
+    background:${statusColor}08;
+    padding:20px;margin-bottom:12px;
+    font-family:'JetBrains Mono',monospace;
+  ">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;">
+      <div style="font-size:28px;font-weight:700;color:${statusColor};">${statusText}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;color:var(--bright);">CanvasOS ${esc(bs.version)}</div>
+        <div style="font-size:10px;color:var(--dim);">${esc(bs.build_date)} · ${esc(bs.compiler)} · ${esc(bs.arch)}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:24px;font-size:11px;">
+      <div><span style="color:#50c88a;font-size:18px;font-weight:700;">${bs.total_pass}</span><br><span style="color:var(--dim);font-size:9px;">PASS</span></div>
+      <div><span style="color:#ff5566;font-size:18px;font-weight:700;">${bs.total_fail}</span><br><span style="color:var(--dim);font-size:9px;">FAIL</span></div>
+      <div><span style="color:#ffdd40;font-size:18px;font-weight:700;">${bs.total_skip}</span><br><span style="color:var(--dim);font-size:9px;">SKIP</span></div>
+      <div><span style="color:var(--bright);font-size:18px;font-weight:700;">${total}</span><br><span style="color:var(--dim);font-size:9px;">TOTAL</span></div>
+    </div>
+  </div>`;
+
+  /* Progress bar */
+  const passW = total>0 ? (bs.total_pass/total*100) : 0;
+  const failW = total>0 ? (bs.total_fail/total*100) : 0;
+  const skipW = total>0 ? (bs.total_skip/total*100) : 0;
+  html += `<div style="display:flex;height:6px;margin-bottom:16px;border:1px solid var(--border);overflow:hidden;">
+    <div style="width:${passW}%;background:#50c88a;"></div>
+    <div style="width:${failW}%;background:#ff5566;"></div>
+    <div style="width:${skipW}%;background:#ffdd40;"></div>
+  </div>`;
+
+  /* Suite cards */
+  html += '<div style="display:flex;flex-direction:column;gap:2px;">';
+  (bs.suites||[]).forEach(s=>{
+    const sc = s.status==='pass' ? '#50c88a' : s.status==='fail' ? '#ff5566' : '#ffdd40';
+    const icon = s.status==='pass' ? '●' : s.status==='fail' ? '✕' : '○';
+    const pct = s.expected>0 ? Math.round(s.pass/s.expected*100) : 0;
+    const barW = s.expected>0 ? (s.pass/s.expected*100) : 0;
+
+    html += `<div style="
+      background:var(--panel);border:1px solid var(--border);
+      border-left:3px solid ${sc};padding:10px 14px;
+      display:flex;align-items:center;gap:12px;
+      font-family:'JetBrains Mono',monospace;
+    ">
+      <span style="color:${sc};font-size:14px;width:18px;text-align:center;">${icon}</span>
+      <div style="flex:1;">
+        <div style="font-size:11px;font-weight:700;color:var(--bright);">${esc(s.name)}</div>
+        <div style="font-size:9px;color:var(--dim);">${esc(s.binary)}</div>
+      </div>
+      <div style="width:80px;">
+        <div style="height:3px;background:var(--border);overflow:hidden;">
+          <div style="width:${barW}%;height:100%;background:${sc};"></div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:${sc};min-width:60px;text-align:right;">
+        ${s.pass}/${s.expected} <span style="font-size:9px;">(${pct}%)</span>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  cards.innerHTML = html;
+}
+
+/* ── init ── */
+render();
+</script>
+</body>
+</html>

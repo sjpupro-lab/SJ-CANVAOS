@@ -27,10 +27,61 @@ function renderEntry(e){
   `;
 }
 
+/* ── Build Status Dashboard (legacy page) ── */
+let _buildStatusLegacy = null;
+async function loadBuildStatusLegacy(){
+  if(_buildStatusLegacy) return _buildStatusLegacy;
+  try{
+    const r = await fetch("data/build_status.json");
+    _buildStatusLegacy = await r.json();
+  }catch(e){ _buildStatusLegacy = null; }
+  return _buildStatusLegacy;
+}
+
+async function openBuildDashboard(){
+  const bs = await loadBuildStatusLegacy();
+  const el = document.getElementById("content");
+  if(!bs){
+    el.innerHTML = `<h2>Build Status</h2>
+      <div class="entry"><p>build_status.json 없음. <code>bash scripts/gen_build_status.sh</code> 실행 필요.</p></div>`;
+    return;
+  }
+  const allPass = bs.total_fail === 0;
+  const total = bs.total_pass + bs.total_fail + bs.total_skip;
+  let html = `<h2>Build Status — ${escapeHtml(bs.version)}</h2>`;
+  html += `<div class="small">${escapeHtml(bs.build_date)} · ${escapeHtml(bs.compiler)} · ${escapeHtml(bs.arch)}</div>`;
+
+  html += `<div class="entry" style="border-color:${allPass?'rgba(120,255,170,0.4)':'rgba(255,120,120,0.4)'};">
+    <h3 style="color:${allPass?'rgba(120,255,170,1)':'rgba(255,120,120,1)'};">${allPass?'ALL PASS':bs.total_fail+' FAIL'}</h3>
+    <div class="badges">
+      <span class="badge g">PASS: ${bs.total_pass}</span>
+      <span class="badge r">FAIL: ${bs.total_fail}</span>
+      <span class="badge a">SKIP: ${bs.total_skip}</span>
+      <span class="badge">TOTAL: ${total}</span>
+    </div>
+  </div>`;
+
+  (bs.suites||[]).forEach(s=>{
+    const cls = s.status==='pass'?'g':s.status==='fail'?'r':'a';
+    const icon = s.status==='pass'?'PASS':s.status==='fail'?'FAIL':'SKIP';
+    html += `<div class="entry">
+      <div class="badges"><span class="badge ${cls}">${icon}</span></div>
+      <h3>${escapeHtml(s.name)}</h3>
+      <p>${s.pass}/${s.expected} tests passed</p>
+      <div class="small">${escapeHtml(s.binary)}</div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
 function goHome(){
   document.getElementById("content").innerHTML = `
     <h1>Welcome</h1>
     <p>좌측 탭 또는 검색으로 OS 기능/문서를 탐색하세요.</p>
+    <div class="entry">
+      <h3>Build Dashboard</h3>
+      <p>빌드/테스트 현황은 <a class="pilllink" href="#" onclick="openBuildDashboard();return false;">Build Status</a>에서 확인하세요.</p>
+    </div>
     <div class="entry">
       <h3>Docs</h3>
       <p>프로젝트 문서(docs/)는 <a class="pilllink" href="#" onclick="openDocs();return false;">Docs 탭</a>에서 바로 읽을 수 있어요.</p>

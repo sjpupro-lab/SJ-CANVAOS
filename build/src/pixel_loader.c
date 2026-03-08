@@ -16,6 +16,7 @@
 #include "../include/canvasos_fd.h"
 #include "../include/canvasos_syscall.h"
 #include "../include/canvas_determinism.h"
+#include "../include/canvasos_gate_ops.h"
 #include "../include/engine_time.h"
 #include <string.h>
 #include <stdio.h>

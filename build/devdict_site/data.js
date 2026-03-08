@@ -2625,5 +2625,257 @@ const DOCS = {
       "channel": "B",
       "desc": "struct 항목. 구현/정의 위치를 참고하세요."
     }
+  ],
+  "tervas": [
+    {
+      "name": "Tervas",
+      "kind": "struct",
+      "sig": "TvSnapshot snapshot; TvFilter filter; bool running; TvError last_err; char status_msg[256]; TvRendererBackend renderer_backend;",
+      "loc": "include/tervas_core.h:120",
+      "file": "include/tervas_core.h",
+      "category": "Tervas",
+      "channel": "B",
+      "desc": "Tervas 최상위 구조체. snapshot, filter, renderer 상태를 관리한다. [R-4] READ-ONLY — 엔진 상태를 절대 수정하지 않는다."
+    },
+    {
+      "name": "TvSnapshot",
+      "kind": "struct",
+      "sig": "Cell *canvas; uint32_t canvas_cap; uint8_t gates[TILE_COUNT]; uint32_t width,height; TvViewport viewport; TvSnapshotMode snap_mode; uint32_t tick; bool valid;",
+      "loc": "include/tervas_core.h:94",
+      "file": "include/tervas_core.h",
+      "category": "Tervas",
+      "channel": "A",
+      "desc": "엔진 canvas의 읽기 전용 스냅샷. FULL(8MB), WINDOW(viewport만), COMPACT(active만) 3가지 모드. [R-5] tick boundary에서만 생성."
+    },
+    {
+      "name": "TvFilter",
+      "kind": "struct",
+      "sig": "uint32_t a_values[64]; int a_count; uint8_t b_values[64]; int b_count; TvProjectionMode mode; uint32_t tick; int zoom; int pan_x,pan_y; TvViewport viewport; TvSnapshotMode snap_mode;",
+      "loc": "include/tervas_core.h:74",
+      "file": "include/tervas_core.h",
+      "category": "Tervas",
+      "channel": "B",
+      "desc": "Projection 필터. A/B 값 집합, projection 모드, zoom/pan, viewport, snapshot 모드를 지정한다."
+    },
+    {
+      "name": "TvViewport",
+      "kind": "struct",
+      "sig": "uint32_t x0, y0, w, h;",
+      "loc": "include/tervas_core.h:58",
+      "file": "include/tervas_core.h",
+      "category": "Tervas",
+      "channel": "A",
+      "desc": "Canvas 위의 뷰 창. (x0,y0)은 좌상단, (w,h)는 폭/높이. tv_viewport_full(), tv_viewport_wh(), tv_viewport_bh() 헬퍼 제공."
+    },
+    {
+      "name": "TvProjectionMode",
+      "kind": "enum",
+      "sig": "TV_PROJ_ALL=0, TV_PROJ_A=1, TV_PROJ_B=2, TV_PROJ_AB_UNION=3, TV_PROJ_AB_OVERLAP=4, TV_PROJ_WH=5, TV_PROJ_BH=6",
+      "loc": "include/tervas_core.h:39",
+      "file": "include/tervas_core.h",
+      "category": "Tervas",
+      "channel": "B",
+      "desc": "Projection 모드. ALL=전체, A/B=값 필터, AB_UNION=합집합, AB_OVERLAP=교집합, WH/BH=영역 강조. [R-3] 레이어 없음, 조건 기반 필터만."
+    },
+    {
+      "name": "TvSnapshotMode",
+      "kind": "enum",
+      "sig": "TV_SNAP_FULL=0, TV_SNAP_WINDOW=1, TV_SNAP_COMPACT=2",
+      "loc": "include/tervas_core.h:51",
+      "file": "include/tervas_core.h",
+      "category": "Tervas",
+      "channel": "A",
+      "desc": "스냅샷 모드. FULL=8MB 전체 복사(정확도), WINDOW=viewport만 복사(성능), COMPACT=active만."
+    },
+    {
+      "name": "TvRendererBackend",
+      "kind": "enum",
+      "sig": "TV_RENDER_ASCII=0, TV_RENDER_NCURSES=1, TV_RENDER_SDL2=2, TV_RENDER_OPENGL=3",
+      "loc": "include/tervas_core.h:32",
+      "file": "include/tervas_core.h",
+      "category": "Tervas",
+      "channel": "R",
+      "desc": "렌더러 백엔드. 현재 ASCII(ANSI 터미널)만 구현됨. NCurses/SDL2/OpenGL은 업그레이드 경로."
+    },
+    {
+      "name": "TvError",
+      "kind": "enum",
+      "sig": "TV_OK=0, TV_ERR_NULL=-1, TV_ERR_OOB=-2, TV_ERR_NO_REGION=-3, TV_ERR_TICK_OOB=-4, TV_ERR_OVERFLOW=-5, TV_ERR_ZOOM=-6, TV_ERR_ALLOC=-7, TV_ERR_CMD=-8",
+      "loc": "include/tervas_core.h:107",
+      "file": "include/tervas_core.h",
+      "category": "Tervas",
+      "channel": "G",
+      "desc": "Tervas 에러 코드. OOB=좌표 초과, NO_REGION=미등록 영역, ZOOM=줌 범위 초과, CMD=미등록 명령."
+    },
+    {
+      "name": "TvRenderCell",
+      "kind": "struct",
+      "sig": "uint32_t x,y; uint8_t visible,style; uint32_t a; uint8_t b,g,r,pad;",
+      "loc": "include/tervas_render_cell.h:30",
+      "file": "include/tervas_render_cell.h",
+      "category": "Tervas",
+      "channel": "R",
+      "desc": "Projection 결과 셀. visible=가시성, style=TV_STYLE_* 비트 조합. 모든 Renderer는 이 포맷만 소비한다."
+    },
+    {
+      "name": "TvFrame",
+      "kind": "struct",
+      "sig": "TvRenderCell cells[2048]; uint32_t count,tick,total_visible,wh_active,bh_active;",
+      "loc": "include/tervas_render_cell.h:45",
+      "file": "include/tervas_render_cell.h",
+      "category": "Tervas",
+      "channel": "R",
+      "desc": "Projection→Renderer 전달 프레임 버퍼. 최대 64×32=2048 셀. wh_active/bh_active는 뷰 해상도와 무관한 통계."
+    },
+    {
+      "name": "TV_STYLE_*",
+      "kind": "define",
+      "sig": "NORMAL=0x00, WH=0x01, BH=0x02, A_MATCH=0x04, B_MATCH=0x08, OVERLAP=0x10, GATE_ON=0x20, INACTIVE=0x40",
+      "loc": "include/tervas_render_cell.h:20",
+      "file": "include/tervas_render_cell.h",
+      "category": "Tervas",
+      "channel": "G",
+      "desc": "스타일 비트 플래그. Projection이 결정하고 Renderer가 시각화에 사용. WH=시안, BH=적색, OVERLAP=마젠타, INACTIVE=dim."
+    },
+    {
+      "name": "TvCmdDispatch",
+      "kind": "struct",
+      "sig": "const char *prefix; TvBridgeOp bridge; TvProjectionMode proj; TvRenderEffect render_effect; TvEngReadScope eng_scope; TvError on_error; TvCostClass cost; const char *desc;",
+      "loc": "include/tervas_dispatch.h:52",
+      "file": "include/tervas_dispatch.h",
+      "category": "Tervas",
+      "channel": "B",
+      "desc": "명령 디스패치 레코드. CLI→Bridge→Projection→Renderer 4층 파이프라인을 한 줄로 선언."
+    },
+    {
+      "name": "TV_DISPATCH_TABLE",
+      "kind": "const",
+      "sig": "static const TvCmdDispatch TV_DISPATCH_TABLE[] (22 entries + NULL)",
+      "loc": "include/tervas_dispatch.h:65",
+      "file": "include/tervas_dispatch.h",
+      "category": "Tervas",
+      "channel": "B",
+      "desc": "Spec §8.1 디스패치 테이블. view/inspect/tick/region/snap/zoom/pan/refresh/help/quit + quick 별칭 22개 명령 등록."
+    },
+    {
+      "name": "tervas_init",
+      "kind": "function",
+      "sig": "int tervas_init(Tervas *tv)",
+      "loc": "src/tervas/tervas_core.c:9",
+      "file": "src/tervas/tervas_core.c",
+      "category": "Tervas",
+      "channel": "B",
+      "desc": "Tervas 초기화. filter reset, snapshot 비활성, renderer=ASCII."
+    },
+    {
+      "name": "tervas_free",
+      "kind": "function",
+      "sig": "void tervas_free(Tervas *tv)",
+      "loc": "src/tervas/tervas_core.c:22",
+      "file": "src/tervas/tervas_core.c",
+      "category": "Tervas",
+      "channel": "B",
+      "desc": "Tervas 해제. snapshot canvas 메모리 free."
+    },
+    {
+      "name": "tervas_bridge_attach",
+      "kind": "function",
+      "sig": "int tervas_bridge_attach(Tervas *tv, EngineContext *eng)",
+      "loc": "src/tervas/tervas_bridge.c:19",
+      "file": "src/tervas/tervas_bridge.c",
+      "category": "Tervas",
+      "channel": "B",
+      "desc": "엔진 연결. filter.tick을 엔진 tick으로 동기화하고 viewport를 full로 설정."
+    },
+    {
+      "name": "tervas_bridge_snapshot",
+      "kind": "function",
+      "sig": "int tervas_bridge_snapshot(Tervas *tv, EngineContext *eng, uint32_t tick)",
+      "loc": "src/tervas/tervas_bridge.c:26",
+      "file": "src/tervas/tervas_bridge.c",
+      "category": "Tervas",
+      "channel": "A",
+      "desc": "엔진 canvas를 TvSnapshot으로 복사. [R-4] READ-ONLY. snap_mode에 따라 FULL(8MB)/WINDOW(viewport) 크기 결정."
+    },
+    {
+      "name": "tervas_bridge_inspect",
+      "kind": "function",
+      "sig": "int tervas_bridge_inspect(EngineContext *eng, uint32_t x, uint32_t y, char *buf, size_t buflen)",
+      "loc": "src/tervas/tervas_bridge.c:86",
+      "file": "src/tervas/tervas_bridge.c",
+      "category": "Tervas",
+      "channel": "A",
+      "desc": "단일 셀 조회. (x,y) 좌표의 ABGR 값을 문자열로 출력. OOB 검증."
+    },
+    {
+      "name": "tervas_bridge_region",
+      "kind": "function",
+      "sig": "int tervas_bridge_region(Tervas *tv, EngineContext *eng, const char *name)",
+      "loc": "src/tervas/tervas_bridge.c:95",
+      "file": "src/tervas/tervas_bridge.c",
+      "category": "Tervas",
+      "channel": "A",
+      "desc": "이름 기반 영역 이동. 'wh'→WH viewport+WH mode, 'bh'→BH viewport+BH mode, 'full'→전체."
+    },
+    {
+      "name": "tv_cell_visible",
+      "kind": "function",
+      "sig": "bool tv_cell_visible(uint32_t x, uint32_t y, const Cell *c, const TvFilter *f, const uint8_t *gates)",
+      "loc": "src/tervas/tervas_projection.c:40",
+      "file": "src/tervas/tervas_projection.c",
+      "category": "Tervas",
+      "channel": "G",
+      "desc": "단일 셀 가시성 판정. projection mode에 따라 ALL/A/B/AB_UNION/AB_OVERLAP/WH/BH 필터 적용. [R-6] 정수 연산만."
+    },
+    {
+      "name": "tv_build_frame",
+      "kind": "function",
+      "sig": "int tv_build_frame(TvFrame *frame, const TvSnapshot *snap, const TvFilter *f, uint32_t view_cols, uint32_t view_rows)",
+      "loc": "src/tervas/tervas_projection.c:88",
+      "file": "src/tervas/tervas_projection.c",
+      "category": "Tervas",
+      "channel": "R",
+      "desc": "Projection→TvFrame 생성 (Spec §11). 통계(wh/bh_active)는 전체 스냅샷 기준, 셀 데이터는 뷰 해상도로 샘플링. renderer-agnostic."
+    },
+    {
+      "name": "tv_is_wh_cell / tv_is_bh_cell",
+      "kind": "function",
+      "sig": "bool tv_is_wh_cell(uint32_t x, uint32_t y); bool tv_is_bh_cell(uint32_t x, uint32_t y);",
+      "loc": "src/tervas/tervas_projection.c:16",
+      "file": "src/tervas/tervas_projection.c",
+      "category": "Tervas",
+      "channel": "A",
+      "desc": "WH/BH 영역 기하학 판정. WH=(512,512)-(1023,639), BH=(512,640)-(1023,703). 두 영역은 disjoint."
+    },
+    {
+      "name": "tv_render_frame",
+      "kind": "function",
+      "sig": "int tv_render_frame(const Tervas *tv)",
+      "loc": "src/tervas/tervas_render_ascii.c:33",
+      "file": "src/tervas/tervas_render_ascii.c",
+      "category": "Tervas",
+      "channel": "R",
+      "desc": "ASCII 렌더러. TvFrame을 ANSI 터미널에 출력. 스타일별 색상: WH=시안, BH=적색, A_MATCH=노랑, B_MATCH=초록, OVERLAP=마젠타."
+    },
+    {
+      "name": "tv_cli_exec",
+      "kind": "function",
+      "sig": "int tv_cli_exec(Tervas *tv, EngineContext *eng, const char *line)",
+      "loc": "src/tervas/tervas_cli.c:40",
+      "file": "src/tervas/tervas_cli.c",
+      "category": "Tervas",
+      "channel": "B",
+      "desc": "CLI 명령 실행. view/inspect/tick/region/snap/zoom/pan/refresh/help/quit + quick 별칭을 파싱하고 Bridge→Projection 파이프라인 실행."
+    },
+    {
+      "name": "R-1 ~ R-6 (Fixed Rules)",
+      "kind": "const",
+      "sig": "R-1:Y=time, R-2:4-quadrant, R-3:no-layer, R-4:READ-ONLY, R-5:tick-boundary-snap, R-6:integer-only",
+      "loc": "include/tervas_core.h:7",
+      "file": "include/tervas_core.h",
+      "category": "Tervas",
+      "channel": "G",
+      "desc": "Tervas 불변 규칙 6개. R-1:Y축=시간축, R-2:4분면 레이아웃, R-3:레이어 없음(projection만), R-4:읽기전용, R-5:tick 경계에서만 snapshot, R-6:정수 연산만(DK-2 상속)."
+    }
   ]
 };

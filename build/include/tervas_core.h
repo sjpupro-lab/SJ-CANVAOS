@@ -13,7 +13,7 @@
  */
 #include <stdint.h>
 #include <stdbool.h>
-#include "../../include/canvasos_types.h"
+#include "canvasos_types.h"
 
 /* ── Limits ──────────────────────────────────────────────────────── */
 #define TV_MAX_A          64

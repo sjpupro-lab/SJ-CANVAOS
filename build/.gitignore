@@ -2,7 +2,7 @@
 canvasos
 canvasos_cli
 sjterm
-tervas
+/tervas
 tests/test_phase5
 tests/test_phase6
 tests/test_phase8
