@@ -1,0 +1,34 @@
+# Compiled binaries
+canvasos
+canvasos_cli
+sjterm
+tervas
+tests/test_phase5
+tests/test_phase6
+tests/test_phase8
+tests/test_phase9
+tests/test_phase10
+tests/test_tervas
+tests/test_scan
+tests/test_gate
+tests/test_canvasfs
+tests/test_scheduler
+tests/test_cvp
+tests/*_asan
+examples/hello_canvas
+canvasos_launcher
+
+# Build artifacts
+*.o
+*.cvp
+*.exe
+
+# Distribution (generated)
+dist/
+
+# Working copies
+p7_build/
+
+# OS files
+.DS_Store
+Thumbs.db

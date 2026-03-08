@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>SJ CANVAS OS · DevDictionary Phase 4+5+7</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+:root{
+  --bg:#060809;
+  --panel:#0b0e12;
+  --panel2:#111417;
+  --border:#1a1e26;
+  --border2:#22272f;
+  --dim:#343b48;
+  --muted:#52596a;
+  --text:#b8c0d4;
+  --bright:#dde4f4;
+  --A:rgba(255,200,80,1);
+  --B:rgba(255,100,100,1);
+  --G:rgba(80,240,150,1);
+  --R:rgba(80,160,255,1);
+  --accent:#3ef5c0;
+  --p5:#b060ff;
+  --doc:#f0a030;
+  --scan:rgba(62,245,192,0.015);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'IBM Plex Sans',sans-serif;
+  font-size:13.5px; line-height:1.65;
+  min-height:100vh; overflow:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,var(--scan) 0,var(--scan) 1px,transparent 1px,transparent 3px);
+  pointer-events:none; z-index:0;
+}
+
+.app{position:relative;z-index:1;display:flex;height:100vh;}
+
+/* ── sidebar ── */
+.sidebar{
+  width:250px; background:var(--panel);
+  border-right:1px solid var(--border);
+  padding:16px 12px;
+  display:flex; flex-direction:column; gap:10px;
+  overflow-y:auto;
+}
+.brand{
+  padding:10px 10px 12px;
+  border:1px solid var(--border);
+  background:rgba(62,245,192,.03);
+  flex-shrink:0;
+}
+.brand .tag{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--accent);
+}
+.brand .title{
+  font-family:'JetBrains Mono',monospace;
+  font-size:17px; font-weight:700; color:var(--bright);
+}
+.brand .sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);}
+
+.sep{height:1px; background:var(--border); flex-shrink:0;}
+
+.nav{display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
+.nav-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:8.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--dim); padding:4px 8px 2px;
+}
+.nav button{
+  width:100%; text-align:left; padding:8px 10px;
+  background:transparent; border:1px solid var(--border2);
+  color:var(--text); cursor:pointer;
+  font-family:'JetBrains Mono',monospace; font-size:10.5px;
+  letter-spacing:.05em; transition:all .1s;
+}
+.nav button:hover{border-color:var(--accent);color:var(--bright);background:rgba(62,245,192,.03);}
+.nav button.active{border-color:var(--accent);color:var(--accent);background:rgba(62,245,192,.05);}
+.nav button.p5{border-color:rgba(176,96,255,.3);color:var(--p5);}
+.nav button.p5:hover{border-color:var(--p5);background:rgba(176,96,255,.04);}
+.nav button.p5.active{border-color:var(--p5);background:rgba(176,96,255,.07);}
+.nav button.doc-tab{border-color:rgba(240,160,48,.25);color:var(--doc);}
+.nav button.doc-tab:hover{border-color:var(--doc);background:rgba(240,160,48,.04);}
+.nav button.doc-tab.active{border-color:var(--doc);background:rgba(240,160,48,.06);}
+
+.sidebar-footer{
+  margin-top:auto; padding-top:10px; border-top:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);
+}
+
+/* ── main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+.topbar{
+  display:flex; align-items:center; gap:14px;
+  padding:0 18px; height:52px;
+  border-bottom:1px solid var(--border);
+  background:var(--panel); flex-shrink:0;
+}
+
+.arch-pills{display:flex;gap:6px;align-items:center;}
+.pill{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:2px 8px; border:1px solid var(--border2);
+  font-family:'JetBrains Mono',monospace; font-size:9px;
+  color:var(--muted); white-space:nowrap;
+}
+.dot{width:7px;height:7px;}
+.dot.A{background:var(--A);}.dot.B{background:var(--B);}
+.dot.G{background:var(--G);}.dot.R{background:var(--R);}
+.dot.p5{background:var(--p5);}
+
+.sw{position:relative; flex:1; max-width:540px;}
+.sw .pfx{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);
+  pointer-events:none;
+}
+#search{
+  width:100%; padding:9px 12px 9px 34px;
+  background:var(--panel2); border:1px solid var(--border2);
+  border-left:3px solid var(--accent);
+  color:var(--bright);
+  font-family:'JetBrains Mono',monospace; font-size:13px; outline:none;
+  transition:box-shadow .12s, border-color .12s;
+}
+#search:focus{border-color:var(--accent);box-shadow:0 0 0 1px rgba(62,245,192,.12);}
+#search::placeholder{color:var(--dim);}
+
+.content{flex:1;overflow-y:auto;padding:14px 18px 40px;}
+.meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:12px;}
+.meta .hi{color:var(--accent);}
+.meta .hi2{color:var(--p5);}
+
+/* ── arch map ── */
+.arch-map{
+  display:grid; grid-template-columns:repeat(5,1fr); gap:2px;
+  margin-bottom:18px;
+  font-family:'JetBrains Mono',monospace; font-size:8.5px;
+}
+.am{
+  padding:8px 9px; border:1px solid var(--border2);
+  cursor:default; transition:all .11s;
+}
+.am.click{cursor:pointer;}
+.am.click:hover{background:rgba(62,245,192,.03);border-color:var(--accent);}
+.am-name{font-weight:700;margin-bottom:1px;}
+.am-info{color:var(--dim);font-size:8px;}
+.am.wh .am-name{color:#38b4ff;}
+.am.bh .am-name{color:#ff5566;}
+.am.ctrl .am-name{color:var(--muted);}
+.am.cvp .am-name{color:#ffdd40;}
+.am.p5 .am-name{color:var(--p5);}
+.am.dim .am-name{color:var(--dim);}
+
+/* ── canvas capacity bar ── */
+.cap-bar{
+  display:flex; gap:10px; align-items:center; margin-bottom:16px;
+  padding:10px 14px; border:1px solid var(--border);
+  background:var(--panel); font-family:'JetBrains Mono',monospace; font-size:9.5px;
+}
+.cap-item{display:flex;flex-direction:column;gap:2px;}
+.cap-val{color:var(--accent);font-size:12px;font-weight:700;}
+.cap-label{color:var(--dim);font-size:8px;text-transform:uppercase;letter-spacing:.1em;}
+.cap-sep{color:var(--border2);margin:0 2px;}
+
+/* ── cards ── */
+.cards{display:flex;flex-direction:column;gap:2px;}
+
+.card{
+  background:var(--panel); border:1px solid var(--border);
+  border-left:3px solid transparent;
+  animation:fi .12s ease-out both;
+}
+@keyframes fi{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.card:hover{background:var(--panel2);}
+
+.card.gCore{border-left-color:#4a90d9;}
+.card.gEngine{border-left-color:var(--accent);}
+.card.gFilesystem{border-left-color:#50c88a;}
+.card.gIO{border-left-color:#ffdd40;}
+.card.gDocs{border-left-color:var(--doc);}
+.card.gPhase5{border-left-color:var(--p5);}
+
+.head{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 12px;cursor:pointer;user-select:none;
+}
+.key{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11.5px;font-weight:700;color:var(--bright);flex:1;
+}
+.badge{
+  font-family:'JetBrains Mono',monospace;
+  font-size:8px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;padding:1px 6px;border:1px solid var(--border2);
+  white-space:nowrap;
+}
+.badge.A{color:var(--A);border-color:rgba(255,200,80,.25);background:rgba(255,200,80,.05);}
+.badge.B{color:var(--B);border-color:rgba(255,100,100,.25);background:rgba(255,100,100,.05);}
+.badge.G{color:var(--G);border-color:rgba(80,240,150,.25);background:rgba(80,240,150,.05);}
+.badge.R{color:var(--R);border-color:rgba(80,160,255,.25);background:rgba(80,160,255,.05);}
+.badge.grp{color:var(--muted);}
+.badge.p5b{color:var(--p5);border-color:rgba(176,96,255,.3);background:rgba(176,96,255,.05);}
+.badge.dob{color:var(--doc);border-color:rgba(240,160,48,.25);background:rgba(240,160,48,.05);}
+.chev{color:var(--dim);font-size:9px;font-family:monospace;transition:transform .12s;}
+.card.open .chev{transform:rotate(90deg);}
+
+.body{display:none;border-top:1px solid var(--border);padding:10px 12px 12px;}
+.card.open .body{display:block;}
+.desc{color:var(--text);font-size:13px;line-height:1.75;margin-bottom:10px;}
+.grid{display:grid;grid-template-columns:80px 1fr;gap:3px 8px;}
+.k{font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;padding-top:2px;}
+.v{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);line-height:1.9;}
+.kw{
+  display:inline-block;background:var(--panel2);
+  border:1px solid var(--border2);padding:0 5px;margin:1px 2px;
+  color:var(--accent);font-size:9px;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;transition:border-color .1s;
+}
+.kw:hover{border-color:var(--accent);}
+
+.doc-body{
+  background:var(--panel2);border:1px solid var(--border);
+  padding:10px 12px;margin-top:8px;
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;
+  color:var(--dim);line-height:1.8;white-space:pre-wrap;word-break:break-word;
+}
+
+.empty{
+  padding:48px 0;text-align:center;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);
+}
+.empty em{color:var(--accent);font-style:normal;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- sidebar -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="tag">SJCANVOS</div>
+    <div class="title">DevDictionary</div>
+    <div class="sub">Phase 4+5 · 230 entries · DK 규약 포함</div>
+  </div>
+
+  <div class="nav">
+    <div class="nav-label">Core</div>
+    <button data-tab="Home" class="active">◈ 전체 (Home)</button>
+    <button data-tab="Core">⬡ Core / Types</button>
+    <button data-tab="Engine">⚙ Engine / WH/BH</button>
+    <button data-tab="Filesystem">▤ CanvasFS</button>
+    <button data-tab="IO">◎ CVP I/O</button>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="nav">
+    <div class="nav-label">Phase 5</div>
+    <button data-tab="Phase5" class="p5">⬡ Phase 5 스켈레톤</button>
+  </div>
+
+
+  <div class="nav">
+    <div class="nav-label">Phase 5 TODO 현황</div>
+    <button data-tab="Phase5-DK" class="p5">⬡ [DK] 결정론 규약</button>
+    <button data-tab="Phase5-BH" class="p5">⬡ [BH] 시간 의미 압축</button>
+    <button data-tab="Phase5-MG" class="p5">⬡ [Merge] Δ 충돌 정책</button>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="nav">
+    <div class="nav-label">문서 본문 검색</div>
+    <button data-tab="Docs" class="doc-tab">📄 Docs (풀텍스트)</button>
+    <button data-tab="Docs-CVP_FORMAT_v1" class="doc-tab">  └ CVP_FORMAT</button>
+    <button data-tab="Docs-ENGINE_CANVASOS_v1" class="doc-tab">  └ ENGINE_CANVASOS</button>
+    <button data-tab="Docs-SPEC_CanvasFS_v1_1" class="doc-tab">  └ CanvasFS Spec</button>
+    <button data-tab="Docs-SPEC_CanvasOS_QuadBoot_v1" class="doc-tab">  └ QuadBoot Spec</button>
+    <button data-tab="Docs-SCAN_RingMH" class="doc-tab">  └ SCAN Ring(MH)</button>
+    <button data-tab="Docs-TODO_PHASE4_PLAN" class="doc-tab">  └ Phase 4 Plan</button>
+  </div>
+
+  <div class="sidebar-footer">
+    <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f9aab3a9aca9abb6b9beb4b8b0b5d7bab6b4">[email&#160;protected]</a><br>
+    부산, 대한민국
+  </div>
+</aside>
+
+<!-- main -->
+<section class="main">
+  <div class="topbar">
+    <div class="arch-pills">
+      <span class="pill"><span class="dot A"></span>A=Where</span>
+      <span class="pill"><span class="dot B"></span>B=What</span>
+      <span class="pill"><span class="dot G"></span>G=State</span>
+      <span class="pill"><span class="dot R"></span>R=Stream</span>
+      <span class="pill"><span class="dot p5"></span>P5</span>
+    </div>
+    <div class="sw">
+      <span class="pfx">›</span>
+      <input id="search" type="text" autocomplete="off" spellcheck="false"
+        placeholder="심볼·함수·개념·문서 본문 통합 검색 — CVP_LOCK_SKIP, ipc_cursor, branch, LaneID …">
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="meta" id="meta"></div>
+    <div id="arch-map"></div>
+    <div id="cap-bar"></div>
+    <div class="cards" id="cards"></div>
+  </div>
+</section>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+/* ── DATA ── */
+const DATA = [{"kind":"const","key":"CANVAS_W / CANVAS_H","group":"Core","desc":"캔버스(이미지 메모리) 전체 크기. Phase4 기준 1024×1024 셀(Cell).","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"CANVAS_W=1024, CANVAS_H=1024","channel":"A"},{"kind":"const","key":"ORIGIN_X / ORIGIN_Y","group":"Core","desc":"캔버스의 원점(중앙). 스캔 시작점/좌표 기준점.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"(512,512)","channel":"A"},{"kind":"struct","key":"Cell (ABGR Contract)","group":"Core","desc":"캔버스의 최소 단위(픽셀 1개). A(Where)·B(Behavior)·G(State)·R(Stream) 4층으로 데이터를 저장.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"A:u32, B:u8, G:u8, R:u8, pad:u8","channel":"A,B,G,R"},{"kind":"field","key":"Cell.A","group":"Core","desc":"공간/주소(Where)층. gate_id, 참조, 분기 힌트 같은 '어디' 정보를 담는 32비트.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"","channel":"A"},{"kind":"field","key":"Cell.B","group":"Core","desc":"행동(Behavior)층. 이 셀을 만났을 때 실행할 opcode/type/bpage id 같은 '무엇을 할지' 8비트.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"","channel":"B"},{"kind":"field","key":"Cell.G","group":"Core","desc":"상태(State)층. 에너지/플래그/길이 같은 '상태값' 8비트. BH 에너지로도 사용.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"","channel":"G"},{"kind":"field","key":"Cell.R","group":"Core","desc":"스트림(Stream)층. 실제 데이터 1바이트(문자, payload).","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"","channel":"R"},{"kind":"helper","key":"A_word helpers (LEGACY)","group":"Core","desc":"A를 cond/op/arg로 쪼개는 과거 방식. 현재 계약은 opcode가 B에 있음.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"A_cond(A)=A>>24, A_op(A)=(A>>12)&0xFFF, A_arg0(A)=A&0xFFF","channel":"A"},{"kind":"enum","key":"Opcode (legacy enum)","group":"Core","desc":"Phase1 데모용 opcode enum. Phase3+의 'WH_*' SSOT opcodes.def와 별개로 존재.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"OP_NOP, OP_PRINT, OP_HALT, OP_GATE_ON/OFF, OP_MKFILE, OP_ENERGY","channel":"B"},{"kind":"const","key":"TILE / TILE_COUNT","group":"Core","desc":"게이트는 셀 단위가 아니라 16×16 타일 단위. 1024/16=64라서 총 64×64=4096 타일.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"TILE=16, TILE_COUNT=4096","channel":"A"},{"kind":"enum","key":"GateState","group":"Core","desc":"타일 게이트 상태. OPEN인 타일만 실행/접근 허용.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"GATE_CLOSE=0, GATE_OPEN=1","channel":"G"},{"kind":"func","key":"tile_id_of_xy(x,y)","group":"Core","desc":"셀 좌표(x,y)가 속한 타일 번호(gate_id)를 계산.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"gate_id=(y/16)*64+(x/16)","channel":"A"},{"kind":"enum","key":"ScanMode","group":"Core","desc":"스캔(읽는 순서) 정책. 열린 타일 밀도(density)에 따라 자동 선택 가능.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"SCAN_RING_MH=0, SCAN_HYBRID=1, SCAN_SPIRAL=2","channel":"B"},{"kind":"struct","key":"ActiveSet","group":"Core","desc":"열린 타일 목록(4096개)을 들고 있는 실행 필터. open_count/density/mode 포함.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"open[TILE_COUNT] bitmap","channel":"G"},{"kind":"struct","key":"EnergyConfig","group":"Core","desc":"에너지(=G) 감소 속도 설정. enabled=true면 tick마다 decay_rate만큼 깎음.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"decay_rate:u8, enabled:bool","channel":"G"},{"kind":"region","key":"Control Region (CR)","group":"Core","desc":"캔버스 중앙 64×64 예약 영역. 커널 설정/브랜치/페이지/어댑터 정보를 캔버스 내부에 저장.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"x∈[512..575], y∈[512..575]","channel":"A"},{"kind":"struct","key":"SuperBlock","group":"Core","desc":"Control Region CR0에 들어가는 헤더. magic/spec_version/default_scan 등 '볼륨 헤더' 같은 역할.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"","channel":"A"},{"kind":"struct","key":"BranchCommit","group":"Core","desc":"CR1 Branch Table 항목. 브랜치 부모/게이트/bpage 참조 등을 기록.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"","channel":"A"},{"kind":"struct","key":"PageSelector","group":"Core","desc":"CR2 선택자. x/y 범위, 사분면 마스크, plane_mask(A/B/G/R)로 어떤 영역을 읽을지 정의.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"","channel":"A,B,G,R"},{"kind":"struct","key":"BPageEntry","group":"Core","desc":"CR3 어댑터(B-page) 디렉터리 항목. bpage_id, storage_type, microstep_size/cnt, data_ref.","loc":"include/canvasos_types.h","tags":"","keywords":"","values":"","channel":"B"},{"kind":"struct","key":"EngineContext","group":"Engine","desc":"엔진 실행의 '현재 상태' 묶음. cells, gates, RuleTable, tick, now(TimeSlice)를 가진다.","loc":"include/canvasos_engine_ctx.h","tags":"","keywords":"","values":"","channel":"A,B,G"},{"kind":"struct","key":"TimeSlice","group":"Engine","desc":"현재 월드(now) 설정: page_id, gate_snapshot_id, bpage_chain, scan_state(커서).","loc":"include/canvasos_engine_ctx.h","tags":"","keywords":"","values":"","channel":"B"},{"kind":"func","key":"engctx_init","group":"Engine","desc":"EngineContext 초기화. canvas 메모리/게이트/룰테이블 연결.","loc":"include/canvasos_engine_ctx.h","tags":"","keywords":"","values":"","channel":"A"},{"kind":"func","key":"engctx_tick","group":"Engine","desc":"tick 1회 진행. ctx->tick++ 하고 WH_OP_TICK 기록 등 heartbeat 수행.","loc":"include/canvasos_engine_ctx.h","tags":"","keywords":"","values":"","channel":"B"},{"kind":"func","key":"engctx_replay","group":"Engine","desc":"WH 레코드를 tick 범위로 재실행(부작용 재현). 게이트 open/close 같은 효과가 다시 발생.","loc":"include/canvasos_engine_ctx.h","tags":"","keywords":"","values":"","channel":"B"},{"kind":"func","key":"engctx_inspect_cell","group":"Engine","desc":"현재 스냅샷에서 (x,y) 셀을 조회. Phase4는 snapshot-only.","loc":"include/canvasos_engine_ctx.h","tags":"","keywords":"","values":"","channel":"A"},{"kind":"struct","key":"CanvasFS","group":"Filesystem","desc":"캔버스의 타일을 파일처럼 쓰는 파일시스템. freemap_gate로 빈 타일을 할당.","loc":"include/canvasfs.h","tags":"","keywords":"","values":"","channel":"A"},{"kind":"struct","key":"FsKey","group":"Filesystem","desc":"파일을 가리키는 키: volh_gate(볼륨 헤더 타일) + slot(0..255).","loc":"include/canvasfs.h","tags":"","keywords":"","values":"gate_id:u16, slot:u8","channel":"A"},{"kind":"enum","key":"FsSlotClass","group":"Filesystem","desc":"슬롯(파일)의 저장 방식. TINY/SMALL/LARGE로 자동 분류.","loc":"include/canvasfs.h","tags":"","keywords":"","values":"FREE=0, TINY=1(≤4B), SMALL=2(≤224B), LARGE=3(>224B)","channel":"B"},{"kind":"term","key":"FreeMap (FRE1)","group":"Filesystem","desc":"빈 타일(gate_id)을 관리하는 비트맵. 파일/디렉터리/데이터 타일 할당에 사용.","loc":"include/canvasfs.h","tags":"","keywords":"","values":"","channel":"G"},{"kind":"const","key":"Reserved Gate Range","group":"Filesystem","desc":"Control Region 타일(32..35,32..35)은 FS가 사용 금지. gate_id 2080..2275 예약.","loc":"include/canvasfs.h","tags":"","keywords":"","values":"FS_RESERVED_LO=2080, FS_RESERVED_HI=2275","channel":"A"},{"kind":"func","key":"fs_format_volume","group":"Filesystem","desc":"VOLH/VOLT 2타일로 볼륨 포맷. 헤더와 슬롯(256)을 준비.","loc":"include/canvasfs.h","tags":"","keywords":"","values":"","channel":"B"},{"kind":"func","key":"fs_write / fs_read","group":"Filesystem","desc":"FsKey가 가리키는 슬롯에 데이터를 저장/읽기. 길이에 따라 TINY/SMALL/LARGE 선택.","loc":"include/canvasfs.h","tags":"","keywords":"","values":"","channel":"R"},{"kind":"struct","key":"FsBpageChain","group":"Filesystem","desc":"파일 읽기/쓰기 전에 적용하는 어댑터(필터) 체인. 최대 8개.","loc":"include/canvasfs.h","tags":"","keywords":"","values":"FS_CHAIN_MAX=8","channel":"B"},{"kind":"term","key":"CVP (Canvas Vault Package)","group":"I/O","desc":"엔진 상태를 통째로 저장/복구/검증/리플레이하는 캡슐 파일(.cvp). 결정론 락을 포함.","loc":"include/cvp_io.h","tags":"","keywords":"","values":"","channel":"A"},{"kind":"enum","key":"CvpStatus","group":"I/O","desc":"CVP API의 에러 코드 집합.","loc":"include/cvp_io.h","tags":"","keywords":"","values":"CVP_OK=0, CVP_ERR_*=-1..-6","channel":"B"},{"kind":"const","key":"CVP_LOCK_SKIP","group":"I/O","desc":"검증/로드/리플레이에서 특정 락 필드를 무시하기 위한 센티널(0xFFFFFFFF).","loc":"include/cvp_io.h","tags":"","keywords":"","values":"0xFFFFFFFF","channel":"A"},{"kind":"const","key":"CVP_CONTRACT_HASH_V1","group":"I/O","desc":"ABGR 계약 지문(0x41424752). 계약이 바뀌면 값도 바뀌어야 함.","loc":"include/cvp_io.h","tags":"","keywords":"","values":"0x41424752 ('ABGR')","channel":"A,B,G,R"},{"kind":"func","key":"cvp_save_ctx","group":"I/O","desc":"EngineContext를 .cvp로 저장. 헤더 락 + TLV 섹션 + 섹션별 CRC32.","loc":"include/cvp_io.h","tags":"","keywords":"","values":"","channel":"B"},{"kind":"func","key":"cvp_load_ctx","group":"I/O","desc":"cvp를 EngineContext에 로드(또는 dry_run으로 검증만). 락 필드 강제.","loc":"include/cvp_io.h","tags":"","keywords":"","values":"","channel":"B"},{"kind":"func","key":"cvp_validate","group":"I/O","desc":"헤더 magic/version/CRC + 락 필드만 검사(캔버스 데이터는 로드 안 함).","loc":"include/cvp_io.h","tags":"","keywords":"","values":"","channel":"B"},{"kind":"func","key":"cvp_replay_ctx","group":"I/O","desc":"cvp 안의 WH 레코드를 tick 범위로 재실행. WH_CAP 윈도우 안에서만 유효.","loc":"include/cvp_io.h","tags":"","keywords":"","values":"","channel":"B"},{"kind":"func","key":"cvp_strerror","group":"I/O","desc":"CvpStatus를 사람이 읽는 문자열로 변환.","loc":"include/cvp_io.h","tags":"","keywords":"","values":"","channel":""},{"kind":"opcode","key":"WH_GATE_OPEN","group":"Engine","desc":"WH opcode: open a single tile gate. C1.A=gate_id (low16), target_kind=WH_TGT_TILE.","loc":"include/canvasos_opcodes.def","tags":"gate,open,wh,space","keywords":"GateSpace sched_spawn wake recharge OPEN volt volh WH_OP_GATE_OPEN gate_open_tile gate_open_space_ctx","values":"code=0x10","channel":"B"},{"kind":"opcode","key":"WH_GATE_CLOSE","group":"Engine","desc":"WH opcode: close a single tile gate. C1.A=gate_id (low16), target_kind=WH_TGT_TILE.","loc":"include/canvasos_opcodes.def","tags":"gate,close,wh,space","keywords":"GateSpace sched_tick sleep CLOSE volt volh WH_OP_GATE_CLOSE gate_close_tile gate_close_space_ctx","values":"code=0x11","channel":"B"},{"kind":"opcode","key":"WH_WRITE","group":"Engine","desc":"Write a 2-cell WH record at circular tick-indexed address (mod WH_CAP).","loc":"include/canvasos_opcodes.def","tags":"wh,time,commit,log","keywords":"WhiteHole TimeLane tick commit log wh_write_record WH_LANE wh_cap","values":"code=0x20","channel":"B"},{"kind":"opcode","key":"BH_DECAY","group":"Engine","desc":"Decay BH energy for pid; reaching 0 triggers SLEEP + gate close.","loc":"include/canvasos_opcodes.def","tags":"bh,energy,decay,pid","keywords":"BlackHole energy TTL decay pid bh_decay_energy bh_set_energy sched_tick BH_STATE","values":"code=0x21","channel":"B"},{"kind":"opcode","key":"WH_IPC_SEND","group":"I/O","desc":"WH IPC record. C0:A=dst_pid,G=dst_canvas,R=slot. C1:A=src_pid,G=gate_hi,R=gate_lo. Consumed via ipc_cursor scan.","loc":"include/canvasos_opcodes.def","tags":"ipc,wh,send,relay","keywords":"IPC send recv sched_ipc_send sched_ipc_recv ipc_cursor dst_pid src_pid payload_key mount_canvas Phase5","values":"code=0x30","channel":"B"},{"kind":"opcode","key":"CVP_SAVE","group":"I/O","desc":"Save EngineContext to .cvp file: header locks + TLV sections + per-section CRC32.","loc":"include/canvasos_opcodes.def","tags":"cvp,io,save,snapshot","keywords":"cvp_save_ctx EngineContext CvpHeader scan_policy bpage_version contract_hash CVP_CONTRACT_HASH_V1 CANVAS_BASE GATE_STATE WH_LANE BH_STATE","values":"code=0x40","channel":"B"},{"kind":"opcode","key":"CVP_LOAD","group":"I/O","desc":"Load .cvp into EngineContext. Enforces lock fields (use CVP_LOCK_SKIP to skip). Restores tick, cells, gates, active_open.","loc":"include/canvasos_opcodes.def","tags":"cvp,io,load,restore","keywords":"cvp_load_ctx dry_run CVP_LOCK_SKIP GATE_STATE active_open sync tick restore save_tick","values":"code=0x41","channel":"B"},{"kind":"opcode","key":"CVP_VALIDATE","group":"I/O","desc":"Check .cvp header magic/version/CRC and lock fields without loading canvas data.","loc":"include/canvasos_opcodes.def","tags":"cvp,validate,crc,lock","keywords":"cvp_validate magic CVP1 header_crc CRC32 lock mismatch CVP_ERR_LOCK wh_cap integrity","values":"code=0x42","channel":"B"},{"kind":"opcode","key":"CVP_REPLAY","group":"I/O","desc":"Replay WH records from .cvp into ctx. Clamps to retained WH window [save_tick-WH_CAP, save_tick].","loc":"include/canvasos_opcodes.def","tags":"cvp,replay,wh,determinism","keywords":"cvp_replay_ctx WH_LANE from_tick to_tick wh_cap circular window wh_exec_min gate determinism TimeMachine","values":"code=0x43","channel":"B"},{"kind":"opcode","key":"ENGCTX_TICK","group":"Engine","desc":"Advance engine by one tick. Writes WH_OP_TICK heartbeat record. Returns 0 or -1.","loc":"include/canvasos_opcodes.def","tags":"engctx,tick,heartbeat","keywords":"engctx_tick ctx->tick WH_OP_TICK heartbeat advance engine loop","values":"code=0x50","channel":"B"},{"kind":"opcode","key":"ENGCTX_REPLAY","group":"Engine","desc":"Re-execute WH records in tick range as side-effects (gates). Clamps to WH window.","loc":"include/canvasos_opcodes.def","tags":"engctx,replay,wh,sideeffect","keywords":"engctx_replay from_tick to_tick wh_exec_record WH_CAP window gate open close deterministic","values":"code=0x51","channel":"B"},{"kind":"opcode","key":"ENGCTX_INSPECT","group":"Engine","desc":"Return cell at (x,y) from current snapshot. Phase4: snapshot-only; Phase5 adds sparse diff.","loc":"include/canvasos_opcodes.def","tags":"engctx,inspect,cell,lookup","keywords":"engctx_inspect_cell x y at_tick snapshot canvas_contract ABGR","values":"code=0x52","channel":"B"},{"kind":"region","key":"WH","group":"Engine","desc":"Tick-indexed circular append area. WH_CAP=32768 records (2-cell each). Replay window=[save_tick-WH_CAP, save_tick].","loc":"include/canvasos_regions.def","tags":"time,wh,log,phase3,circular","keywords":"WhiteHole TimeLane WH_LANE wh_write_record wh_read_record WH_CAP wh_cap 32768 circular overflow mod","values":"pixel=(512,512) + 512×128","channel":"A"},{"kind":"region","key":"BH","group":"Engine","desc":"Decay-only stabilization. pid→cell: x=BH_X0+(pid%BH_W), y=BH_Y0+(pid/BH_W). Energy in cell.G.","loc":"include/canvasos_regions.def","tags":"time,bh,energy,phase3","keywords":"BlackHole energy TTL decay pid bh_decay_energy bh_set_energy bh_get_energy BH_STATE","values":"pixel=(512,640) + 512×64","channel":"A"},{"kind":"region","key":"CONTROL","group":"Core","desc":"Reserved control tiles (tile_x 32..35, tile_y 32..35). Pre-marked in FreeMap. gate_id 2080..2275.","loc":"include/canvasos_regions.def","tags":"kernel,control,reserved,phase2","keywords":"Control Region reserved tiles gate_id 2080..2275 FreeMap FS_RESERVED_LO FS_RESERVED_HI fs_freemap_init","values":"","channel":"A"},{"kind":"region","key":"CVP_HEADER","group":"I/O","desc":"CVP file header (44 bytes). Locks: scan_policy, bpage_version, contract_hash, wh_cap. CRC covers bytes 0..39.","loc":"include/canvasos_regions.def","tags":"cvp,header,lock,phase4","keywords":"CvpHeader magic CVP1 version scan_policy bpage_version contract_hash CVP_CONTRACT_HASH_V1 CVP_LOCK_SKIP wh_cap save_tick header_crc CRC32","values":"","channel":"A"},{"kind":"region","key":"CVP_SECTIONS","group":"I/O","desc":"CVP TLV section stream. Format: [type:u16][len:u32][crc:u32][data]. 4 section types defined.","loc":"include/canvasos_regions.def","tags":"cvp,tlv,sections,phase4","keywords":"TLV CANVAS_BASE GATE_STATE WH_LANE BH_STATE SEC_CANVAS_BASE SEC_GATE_STATE SEC_WH_LANE SEC_BH_STATE type len crc payload","values":"","channel":"A"},{"kind":"doc","key":"1. Header (CvpHeader)","group":"Docs","desc":"리틀엔디안.\n\n| Field | Type | Meaning |\n|---|---:|---|\n| magic | u32 | `CVP1` |\n| version | u32 | `0x00010001` |\n| engine_major/minor | u32 | 엔진 버전 |\n| scan_policy | u32 | `SCAN_RING_N4=1`, `SCAN_SPIRAL=2` |\n| bpage_version | u32 | RuleTable/SSOT 버전(또는 hash) |\n| contract_hash | u32 | ABGR 계약 signature |\n| wh_cap | u32 | 컴파일된 WH_CAP 고정 |\n| save_tick | u32 | 저장 시점 tick |\n| flags | u32 | 예약 |\n| header_crc | u32 | header_crc 제외 0..(N-1) CRC32 |","loc":"CVP_FORMAT_v1.md","values":"","tags":"docs,cvp_format_v1","keywords":"version contract_hash RuleTable CVP1 CRC32 SSOT engine_major Field minor SCAN_SPIRAL signature ABGR x00010001 Type save_tick scan_policy magic Meaning wh_cap WH_CAP u32 flags hash SCAN_RING_N4 header_crc bpage_version tick CVP1 0x00010001 SCAN_RING_N4=1 SCAN_SPIRAL=2","channel":"","doc_ref":"CVP_FORMAT_v1"},{"kind":"doc","key":"2. TLV Sections","group":"Docs","desc":"반복 구조:\n\n```\n[type:u16][len:u32][crc:u32][data...]\n```\n\n- `crc`는 `data`에 대한 CRC32","loc":"CVP_FORMAT_v1.md","values":"","tags":"docs,cvp_format_v1","keywords":"u16 CRC32 len data crc type u32 [type:u16][len:u32][crc:u32][data...]","channel":"","doc_ref":"CVP_FORMAT_v1"},{"kind":"doc","key":"Section Types","group":"Docs","desc":"| type | name | payload |\n|---:|---|---|\n| 1 | CANVAS_BASE | 전체 Cell dump (`sizeof(Cell) * W*H`) |\n| 2 | GATE_STATE | Tile gate state array (`TILEGATE_COUNT`) |\n| 3 | WH_LANE | WH 영역 Cell dump (검증/툴링용, CANVAS_BASE와 중복) |\n| 4 | BH_STATE | BH 영역 Cell dump (검증/툴링용, CANVAS_BASE와 중복) |","loc":"CVP_FORMAT_v1.md","values":"","tags":"docs,cvp_format_v1","keywords":"Cell payload GATE_STATE Tile BH_STATE dump name sizeof array gate CANVAS_BASE type TILEGATE_COUNT state WH_LANE TILEGATE_COUNT sizeof(Cell) * W*H","channel":"","doc_ref":"CVP_FORMAT_v1"},{"kind":"doc","key":"3. Replay","group":"Docs","desc":"- Replay의 유일 입력은 **WH 레코드(2-cell)**.\n- WH는 원형 버퍼이므로 replay 가능한 범위는:\n\n```\n[save_tick - min(save_tick, WH_CAP), save_tick]\n```\n\n이 범위를 벗어나면 from_tick은 자동으로 clamp된다.","loc":"CVP_FORMAT_v1.md","values":"","tags":"docs,cvp_format_v1","keywords":"cell min save_tick Replay clamp WH_CAP replay from_tick [save_tick - min(save_tick, WH_CAP), save_tick]","channel":"","doc_ref":"CVP_FORMAT_v1"},{"kind":"doc","key":"Always-ON Spatial Execution Model","group":"Docs","desc":"---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":" ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"0. Core Philosophy","group":"Docs","desc":"CanvasOS는 기본적으로 **항상 ON 상태**이다.\n\n제어는 ON 신호가 아니라,\n**차단(CLOSE)을 기본값으로 두고 통과(OPEN)만 흐르게 하는 방식**으로 수행한다.\n\n즉:\n- 실행은 \"켜기\"가 아니라\n- **차단을 신호로 처리하는 구조**이다.\n\n이 구조는 기존 인터럽트/컨텍스트 스위치 중심 OS와 다르게,\n공간 기반 제어 모델을 따른다.\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"CanvasOS OPEN CLOSE ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"1.1 Cell Structure (ABGR Contract)","group":"Docs","desc":"Each Cell consists of:\n- **A_word (u32)**  → Spatial Address Layer (Where)\n- **B (u8)**        → Behavior Layer (What)\n- **G (u8)**        → State Layer (How it is)\n- **R (u8)**        → Stream Layer (Data body)\n- **pad (u8)**      → Reserved / Extension\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"Where Reserved consists Stream State Address Cell Behavior How pad body Data Spatial u32 Layer What Each A_word Extension ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"2.1 A — Spatial Address Layer (Where)","group":"Docs","desc":"A는 다음만 허용된다:\n- 주소 (tile / cell / slot / chain pointer)\n- 링크 (next/ref)\n- 공간 ID / 페이지 ID / 볼륨 ID\n- 클래스/공간 계층 ID (공간 분류)\n\n❗ **A에는 명령(opcode)을 두지 않는다.**  \nA는 항상 **Where**만 정의한다.\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"pointer opcode ref cell Where tile chain next slot ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"2.2 B — Behavior Layer (What)","group":"Docs","desc":"B는 다음만 허용된다:\n- 명령 인덱스 (opcode index)\n- 타입 (DAT/META/DIR/FRE/VOLH 등)\n- 슬롯 클래스 (TINY/SMALL/LARGE)\n- B-page ID / Adapter ID\n- MicroStep / RuleTable Index\n\n❗ **B에는 주소를 저장하지 않는다.**  \nB는 항상 **What**만 정의한다.\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"DIR MicroStep opcode SMALL RuleTable FRE Index What META page Adapter DAT TINY VOLH index LARGE ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"2.3 G — State Layer (How it is)","group":"Docs","desc":"G는 상태 관련 값만 가진다:\n- 길이 (short len)\n- 상태 플래그\n- 버전 / 락 / 검증 상태\n- 에너지/예산 상태(스케줄러 연동)\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"len short ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"2.4 R — Stream Layer (Data body)","group":"Docs","desc":"R은 데이터 스트림 전용이다:\n- 파일 payload\n- Δ 기록 데이터\n- 연속 접근 데이터\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"payload ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"2.5 복합 의미 금지 규칙","group":"Docs","desc":"하나의 채널에 주소 + 명령 + 상태를 혼합하지 않는다.  \n복합 의미는 반드시 **RuleTable(B-page)**에서 조합한다.\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"page RuleTable ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"3. RuleTable (B-page Engine)","group":"Docs","desc":"B는 단순 인덱스이다.  \n실제 동작 의미는 `RuleTable[B]`에서 정의된다.\n\nRuleTable은 다음을 포함할 수 있다:\n- addr_mode\n- exec_mode\n- state_policy\n- stream_policy\n- adapter chain\n\nRuleTable은 반드시:\n- **가역성(encode/decode 1:1)**\n- **결정론(deterministic)**\n\n을 만족해야 한다.\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"chain adapter RuleTable state_policy deterministic addr_mode decode stream_policy exec_mode encode RuleTable[B]","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"4.1 Always-ON + Gate Filtering","group":"Docs","desc":"한 Tick은 다음 순서를 따른다:\n\n1) Observe\n- PageSelector 적용\n- GateSet 적용\n- ActiveSet 산출 (살아남은 신호)\n\n2) Interpret\n- ActiveSet 셀을 B-page 체인으로 해석\n\n3) Commit\n- 변경사항은 Δ-Commit으로 기록 (TimeLane)\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"ActiveSet Observe TimeLane Tick Commit Interpret page PageSelector GateSet ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"5. TimeMachine Engine","group":"Docs","desc":"TimeMachine은 로그 파일이 아니라, **공간 기반 시간 모델**이다.","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"TimeMachine ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"5.1 Time Definition","group":"Docs","desc":"- **Y축은 시간 진행 방향**이다.\n- 각 Quadrant는 중심에서 외곽으로 시간 진행을 가진다(정책으로 고정).","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"Quadrant ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"5.2 TimeSlice","group":"Docs","desc":"TimeSlice는 다음으로 정의된다:\n- page_id\n- bpage_chain\n- gate_snapshot\n- scan_state\n\n이 조합이 동일하면 결과는 항상 동일해야 한다.","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"bpage_chain scan_state TimeSlice page_id gate_snapshot ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"5.3 Δ-Commit Rule","group":"Docs","desc":"모든 상태 변화는:\n- TimeLane 영역에 기록된다.\n- 기존 상태를 덮어쓰지 않는다.\n- 과거는 변경되지 않는다(읽기 전용).\n\n이전 픽셀로 이동 = 디버깅(타임머신).\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"TimeLane ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"5.4 WhiteHole / BlackHole Tick Space (WH/BH)","group":"Docs","desc":"CanvasOS는 Tick 단위 동작을 위해, Q3(우하 정배열 512×512) 상단에\nTick 전용 공간을 고정 배치한다.\n\n- WhiteHole(WH): Tick 증가에 따라 기록이 \"추가(append)\"되는 공간\n- BlackHole(BH): Tick 진행에 따라 값이 \"감소(decay)\"하는 공간\n\nWH/BH는 Always-ON 캔버스 위에서 Gate(CLOSE/OPEN)로만 흐름을 제어한다.\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"Tick CanvasOS WhiteHole decay CLOSE OPEN Gate append Always BlackHole ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"5.4.1 위치/크기 (Q3 Top Allocation)","group":"Docs","desc":"Q3 영역:\n- x: 512..1023 (width = 512)\n- y: 512..1023 (height = 512)\n\nWH/BH는 Q3의 \"가장 윗쪽(=y=512부터)\"에 배치한다.\n\n기본값:\n- WH: N_WH_TILES_Y = 8 tiles  → 8*16 = 128 px 높이\n- BH: N_BH_TILES_Y = 4 tiles  → 4*16 = 64 px 높이\n\n좌표 정의:\n- WH origin = (WH_X0, WH_Y0) = (512, 512)\n- WH size   = (512, 128)\n- BH origin = (BH_X0, BH_Y0) = (512, 512 + 128) = (512, 640)\n- BH size   = (512, 64)\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"origin N_BH_TILES_Y size BH_X0 height N_WH_TILES_Y tiles WH_Y0 width BH_Y0 WH_X0 ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"5.4.2 WH 레코드 포맷 (2 Cells / Record)","group":"Docs","desc":"WH는 \"로그처럼\" 사용되며, Tick 인덱스가 곧 저장 주소가 된다.\n레코드는 고정 길이 2셀로 정의한다.\n\nRecord = 2 Cells (C0, C1)\n\n채널 계약 준수:\n- A: Spatial Address Layer (Where)\n- B: Behavior Layer (What)\n- G: State Layer (State/flags)\n- R: Stream Layer (byte stream)\n\nC0 (Header/Opcode):\n- A: tick_low32 또는 event_id\n- B: opcode_index (RuleTable index)\n- G: state/flags\n- R: param0 (1 byte)\n\nC1 (Target/Arg):\n- A: target_addr (예: gate_id/slot/cell index를 packing한 주소)\n- B: target_kind (FS_SLOT / TILE / CELL / PROC 등)\n- G: arg_state (짧은 길이/상태)\n","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"pointer target_addr packing RuleTable Where TILE state byte param0 Arg opcode_index cell gate_id Stream State Address CELL CanvasFS stream Behavior Header event_id DataTile param1 Opcode tick_low32 Target Spatial target_kind flags Record Layer payload What arg_state Tick Cells key FS_SLOT PROC index slot ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"5.4.3 Tick → WH 주소 매핑 (O(1))","group":"Docs","desc":"정의:\n- RECORD_CELLS = 2\n- LANE_W = 512 (Q3 width)\n- RECS_PER_ROW = LANE_W / RECORD_CELLS = 256\n- WH_H = 128\n- WH_CAP = RECS_PER_ROW * WH_H = 32768 records\n\ntick -> index:\n- idx = tick % WH_CAP\n- row = idx / RECS_PER_ROW\n- col = idx % RECS_PER_ROW\n- x = WH_X0 + col * RECORD_CELLS\n- y = WH_Y0 + row\n\nWH 레코드의 첫 셀(C0)은 (x,y), 두번째 셀(C1)은 (x+1,y)\n\n이 매핑은 결정론적이며, 동일 tick은 동일 좌표에 기록된다.\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"WH_CAP records WH_H idx row RECORD_CELLS RECS_PER_ROW LANE_W WH_Y0 col width index WH_X0 tick ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"5.4.4 BH(BlackHole) 목적 및 매핑","group":"Docs","desc":"BH는 \"감쇠/에너지/TTL\" 전용 공간이다.\n\nBH는 append가 아니라 \"소유자 기반 direct mapping\"을 사용한다.\n즉, pid 또는 gate_id에 대해 BH의 고정 위치가 존재한다.\n\n기본 pid 에너지 매핑:\n- pid -> BH cell 좌표 (x,y)를 O(1)로 매핑\n- 해당 셀의 G 또는 A에 에너지 값을 저장 (정책으로 선택)\n- Tick마다 감소(decay), 0이면 해당 프로세스 GateSpace를 CLOSE\n\nBH는 시스템 안정성(자동 sleep/close, TTL)에 직접 연결된다.\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"cell Tick gate_id pid mapping decay GateSpace CLOSE close append TTL direct sleep ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"5.4.5 Determinism Rule (WH/BH)","group":"Docs","desc":"아래가 동일하면 결과도 동일해야 한다:\n- 초기 Canvas\n- 동일 Branch/Page/B-page chain\n- 동일 Gate 상태\n- 동일 Scan Policy\n- 동일 tick 입력\n\nWH 기록 좌표는 tick에 의해 결정되며,\nBH 감소는 pid/gate_id 매핑에 의해 결정된다.","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"Branch Policy pid gate_id Canvas page Page Gate Scan chain tick ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"6.1 Volume Model","group":"Docs","desc":"- **VOLH** (Volume Header Tile)\n- **VOLT** (256 Slot Tile, 헤더 0개)\n\n`VOLH(0,1).A = volt_gate_id`","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"Volume Tile Header Slot volt_gate_id VOLT VOLH VOLH(0,1).A = volt_gate_id","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"6.2 Slot Contract","group":"Docs","desc":"- `slot.A low16  = head_dat_gate`\n- `slot.A high16 = meta_gate`\n\n- `slot.B = slot class / type`\n- `slot.G = state/length`\n- `slot.R = flags`\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"state flags head_dat_gate meta_gate class slot length type high16 low16 slot.R = flags slot.A high16 = meta_gate slot.A low16  = head_dat_gate slot.B = slot class / type slot.G = state/length","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"7. Reserved Regions","group":"Docs","desc":"Control Region:\n- tile_x 32..35\n- tile_y 32..35\n- gate_id 2080..2275\n\nFreeMap 초기화 시 반드시 reserved 처리한다.\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"Control tile_y gate_id FreeMap Region tile_x reserved ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"8. Determinism Requirement","group":"Docs","desc":"다음 조건이 동일하면 결과도 동일해야 한다:\n- 초기 Canvas\n- 동일 Branch\n- 동일 Page\n- 동일 Gate 상태\n- 동일 B-page chain\n- 동일 Scan Policy\n\n이 조건은 테스트로 검증한다.\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"Branch Policy Canvas page Page Gate Scan chain ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"9. Engine Module Separation","group":"Docs","desc":"Core는 다음만 담당한다:\n- Scan\n- Gate filtering\n- Interpretation\n- Commit\n- Replay\n\nPolicy는 다음을 담당한다:\n- Scan Mode (Ring / Spiral)\n- Page Selection\n- B-page selection\n\nFS는 Core 위에서 동작한다.\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"Mode selection Spiral Commit filtering Policy Ring Page page Gate Core Scan Replay Interpretation Selection ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"10. Design Goals","group":"Docs","desc":"- Copy-free branching\n- Spatial determinism\n- Gate-based protection\n- Reversible interpretation\n- GPU-friendly tile parallelism\n- Time-as-space debugging\n\n---","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"free GPU parallelism determinism Time tile Gate Reversible debugging protection branching friendly space interpretation Copy Spatial based ","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"11.1 CVP Lock Fields","group":"Docs","desc":"CVP는 아래 값이 동일할 때만 load/replay를 허용한다:\n\n- `scan_policy`\n- `bpage_version`\n- `contract_hash` (ABGR contract signature)\n- `wh_cap` (compiled WH_CAP)\n\n다르면 `CVP_ERR_LOCK`.","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"compiled contract contract_hash load signature WH_CAP ABGR CVP scan_policy wh_cap CVP_ERR_LOCK replay bpage_version contract_hash scan_policy wh_cap CVP_ERR_LOCK bpage_version","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"11.2 WH Overflow Policy (Fixed)","group":"Docs","desc":"WH는 **원형 버퍼(mod WH_CAP)**로 고정한다.\n\n따라서 replay 가능한 범위는:\n\n`[save_tick - min(save_tick, WH_CAP), save_tick]`\n\n범위를 벗어나는 요청은 자동 clamp된다.\n\n---\n\nEnd of Specification v1.0","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"Specification min save_tick mod WH_CAP clamp End replay [save_tick - min(save_tick, WH_CAP), save_tick]","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"Appendix: DevDictionary (Search-first Documentation)","group":"Docs","desc":"- Canonical opcode/region/binding definitions live in `include/*.def` (SSOT).\n- Generate search index JSON with `python3 tools/gen_devdict.py`.\n- The DevDictionary UI is behavior-first: search a concept/opcode/name -> list pixel/tile/gate locations.","loc":"ENGINE_CANVASOS_v1.md","values":"","tags":"docs,engine_canvasos_v1","keywords":"python3 live include tools SSOT first with pixel DevDictionary region list search def Generate JSON behavior locations Canonical gen_devdict definitions concept opcode binding name The tile gate index include/*.def python3 tools/gen_devdict.py","channel":"","doc_ref":"ENGINE_CANVASOS_v1"},{"kind":"doc","key":"1. 개요","group":"Docs","desc":"Ring(MH)는 Manhattan Distance 기반 나선형 스캔이다.\n중심 (cx, cy)에서 시작하여 반경 r=0,1,2,... 순서로\n각 링(Chebyshev shell)의 셀을 결정론적으로 열거한다.","loc":"SCAN_RingMH.md","values":"","tags":"docs,scan_ringmh","keywords":"shell Ring Chebyshev Distance Manhattan ","channel":"","doc_ref":"SCAN_RingMH"},{"kind":"doc","key":"2. 수학 정의","group":"Docs","desc":"Center: (cx, cy) = (512, 512)\n\n  반경 r의 Ring = { (x,y) | max(|x-cx|, |y-cy|) == r }\n\n  열거 순서 (시계방향):\n  1. 상단 변: y=cy-r, x: cx-r -> cx+r\n  2. 우측 변: x=cx+r, y: cy-r+1 -> cy+r\n  3. 하단 변: y=cy+r, x: cx+r-1 -> cx-r\n  4. 좌측 변: x=cx-r, y: cy+r-1 -> cy-r+1","loc":"SCAN_RingMH.md","values":"","tags":"docs,scan_ringmh","keywords":"max Ring Center ","channel":"","doc_ref":"SCAN_RingMH"},{"kind":"doc","key":"3. 결정론 보장 조건","group":"Docs","desc":"- 동일한 (cx,cy)와 격자 크기에서 항상 동일한 순서\n- r=0: 단일 셀 (cx,cy) 하나만 방문\n- 경계 클리핑: 격자 범위 [0,W) x [0,H) 벗어나면 건너뜀\n- 방문 순서 절대 변경 불가","loc":"SCAN_RingMH.md","values":"","tags":"docs,scan_ringmh","keywords":" ","channel":"","doc_ref":"SCAN_RingMH"},{"kind":"doc","key":"4. 전체 셀 수","group":"Docs","desc":"1024 x 1024 격자 기준:\n  r=0: 1개, r=k: 8k개 (경계 미달 제외), 최대 r=511\n  총합: 1,048,576 = 1024^2","loc":"SCAN_RingMH.md","values":"","tags":"docs,scan_ringmh","keywords":" ","channel":"","doc_ref":"SCAN_RingMH"},{"kind":"doc","key":"5. 의사코드","group":"Docs","desc":"function ring_mh_scan(grid, cx, cy, callback):\n    callback(cx, cy)\n    for r = 1 to MAX_RADIUS:\n      y = cy - r\n      for x = cx-r to cx+r:\n        if in_bounds(x,y): callback(x,y)\n      x = cx + r\n      for y = cy-r+1 to cy+r:\n        if in_bounds(x,y): callback(x,y)\n      y = cy + r\n      for x = cx+r-1 downto cx-r:\n        if in_bounds(x,y): callback(x,y)\n      x = cx - r\n      for y = cy+r-1 downto cy-r+1:\n        if in_bounds(x,y): callback(x,y)\n\n---","loc":"SCAN_RingMH.md","values":"","tags":"docs,scan_ringmh","keywords":"MAX_RADIUS grid in_bounds for ring_mh_scan downto callback function ","channel":"","doc_ref":"SCAN_RingMH"},{"kind":"doc","key":"6. Phase 0 알고리즘 주의사항 (known issue)","group":"Docs","desc":"현재 spec 4.2 구현의 MH Ring에서 **x축 포인트(dy=0, dx!=0)가 생성되지 않는다.**\n\n원인: 각 쿼드런트는 t=0..d-1을 순회하는데,\ndx=t, dy=d-t 에서 dy=0이 되려면 t=d 가 필요하지만 t < d 조건으로 제한됨.\n\n영향:\n  - (513,512), (514,512), ... (x축 방향 셀)이 스캔에서 누락\n  - y=512 행에 HELLO를 심어도 (512,512) 첫 글자만 실행됨\n  - test_scan은 통과: 링마다 2개 중복 + 2개 누락이 상쇄되어 총합=1,048,576\n\nPhase 1 수정 방향:\n  - 각 쿼드런트 t 범위를 0..d 로 확장하고 경계 중복 제거, 또는\n  - 쿼드런트 분할 방식을 4변 열거로 교체 (Chebyshev shell처럼)","loc":"SCAN_RingMH.md","values":"","tags":"docs,scan_ringmh","keywords":"shell Ring Chebyshev HELLO Phase test_scan spec ","channel":"","doc_ref":"SCAN_RingMH"},{"kind":"doc","key":"1. 목표","group":"Docs","desc":"CanvasFS v1.1은 \"타일 1개=파일\" 모델을 버리고, **타일 1개=슬롯 테이블(VolumeTile)**로 고정한다.\n\n- VolumeTile 1개는 16×16=256 슬롯을 가진다.\n- 슬롯은 \"가장 작은 클래스\"부터 자동 선택한다.\n- 실제 데이터는 DataTile로 분리 저장하며, 필요시 체인으로 무제한 확장한다.\n- 브랜치/멀티버스는 Canvas 복사가 아니라 PageSelector(가시성) 변경이다.\n\n---","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"CanvasFS Canvas DataTile PageSelector VolumeTile ","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"2.1 Tile","group":"Docs","desc":"- Tile = 16×16 Cell\n- 전체 타일 수 = 64×64 = 4096\n- `gate_id`는 Tile ID(0..4095)","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"Cell gate_id Tile gate_id","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"2.2 FileKey","group":"Docs","desc":"```\nFsKey = (volume_gate_id, slot)\nvolume_gate_id: 0..4095\nslot: 0..255\n```\n\n**이론상 최대 슬롯 수**\n- 4096 × 256 = 1,048,576\n\n이 값은 \"파일 엔트리 슬롯\"의 수이며, 실제 저장 데이터 용량과 동일하지 않다.\n\n---","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"volume_gate_id FsKey slot FsKey = (volume_gate_id, slot)\nvolume_gate_id: 0..4095\nslot: 0..255","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"3. VolumeTile","group":"Docs","desc":"VolumeTile은 슬롯 테이블이다.","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"VolumeTile ","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"3.1 Magic","group":"Docs","desc":"VolumeTile의 (row0,col0) cell에 다음 값을 저장한다:\n- B='V', G='O', R='L', pad='1'","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"cell pad col0 row0 VolumeTile ","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"3.2 Slot Cell Schema","group":"Docs","desc":"VolumeTile 내의 각 Cell이 곧 \"슬롯 1개\"이다.\n\n- B: slot class\n- G: length\n- R: flags\n- A: payload(TINY) 또는 head data_tile gate_id\n\nSlot class:\n- `FREE(0)`  : 비어있음\n- `TINY(1)`  : 0..4 bytes를 A(u32)에 inline 저장\n- `SMALL(2)` : 5..224 bytes를 DataTile 1개에 저장\n- `LARGE(3)` : 225..∞ bytes를 DataTile 체인으로 저장\n\nLength:\n- TINY/SMALL: 정확한 길이(0..224)\n- LARGE: v1.1에서는 `0xFF`로 마크, 실제 길이는 v1.2 Meta에 저장\n\n---","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"data_tile SMALL class length Length gate_id inline xFF head Cell FREE DataTile Slot TINY u32 LARGE flags payload bytes Meta VolumeTile slot SMALL(2) 0xFF TINY(1) LARGE(3) FREE(0)","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"4. DataTile","group":"Docs","desc":"DataTile은 실제 페이로드 타일이다.","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"DataTile ","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"4.1 Magic","group":"Docs","desc":"DataTile의 (row0,col0) cell:\n- B='D', G='A', R='T', pad='1'","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"cell DataTile pad col0 row0 ","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"4.2 Next pointer","group":"Docs","desc":"DataTile의 (row0,col1) cell:\n- A(u32)의 하위 16비트에 next_gate_id 저장\n- next_gate_id=0이면 체인 종료","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"cell DataTile next_gate_id col1 row0 u32 ","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"4.3 Payload Layout","group":"Docs","desc":"- payload rows = row2..row15\n- payload cells = 14×16=224\n- v1.1 저장: R 채널 1 byte per cell\n\n---","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"row2 payload rows cells row15 cell per byte ","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"5.1 Write","group":"Docs","desc":"입력 길이 len에 따라 자동 선택:\n- len<=4  → TINY\n- 5..224  → SMALL (DataTile 1개)\n- >224    → LARGE (DataTile 체인)","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"SMALL len DataTile TINY LARGE ","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"5.2 Read","group":"Docs","desc":"- TINY: A에서 복원\n- SMALL: head DataTile 1개 읽음\n- LARGE: 체인을 순서대로 읽음(출력 버퍼 cap까지)","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"SMALL DataTile cap TINY head LARGE ","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"5.3 Free","group":"Docs","desc":"- 슬롯을 FREE로만 표시한다.\n- v1.1에서는 DataTile GC는 수행하지 않는다.\n\n---","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"DataTile FREE ","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"6. v1.2 확장","group":"Docs","desc":"- DirectoryBlock: `name_hash → FsKey(volume,slot)`\n- Large length meta: LARGE의 실제 길이를 MetaTile에 저장\n- FreeMap: DataTile 할당을 위한 비트맵/프리리스트\n- Gate 연동: Gate CLOSED면 read/write 차단","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"CLOSED FsKey Large meta MetaTile FreeMap DataTile volume DirectoryBlock name_hash length Gate read write LARGE slot name_hash → FsKey(volume,slot)","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"9. B-page (Format Adapter)","group":"Docs","desc":"CanvasFS의 \"포맷 전환\"은 **데이터 이동 없이** 이뤄진다.\n\n- VolumeTile마다 `active bpage_id`가 있다.\n- `bpage_id`가 바뀌면, 같은 DataTile의 R 바이트열을 다른 규칙으로 decode/encode 한다.\n- 즉, **B-page 교체 한 줄 = 포맷2포맷 Adapter**.","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"CanvasFS DataTile page active decode Adapter bpage_id encode VolumeTile active bpage_id bpage_id","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"9.1 저장 위치","group":"Docs","desc":"- VolumeTile (VOL1)\n  - (row0,col1).B = bpage_id low\n  - (row0,col1).G = bpage_id high","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"low high VOL1 col1 bpage_id row0 VolumeTile ","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"9.2 기본 제공 bpage_id (v1.2)","group":"Docs","desc":"- 0: IDENTITY (no-op)\n- 1: XOR8      (byte ^= key)\n- 2: NIBBLE    (swap hi/lo nibble)\n- 3: ROTL1     (encode rotl1, decode rotr1)\n\n`key`는 기본적으로 다음으로 결정된다:\n\n- `key = 0x5A ^ (bpage_id & 0xFF) ^ (volume_gate_id & 0xFF)`\n\n(결정론적, 가역, 빠름)","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"volume_gate_id IDENTITY rotr1 key nibble swap x5A ROTL1 decode rotl1 bpage_id xFF XOR8 byte encode NIBBLE key key = 0x5A ^ (bpage_id & 0xFF) ^ (volume_gate_id & 0xFF)","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"9.3 API","group":"Docs","desc":"- `fs_set_bpage(fs, volume_gate_id, bpage_id)`\n- `fs_get_bpage(fs, volume_gate_id, &out_bpage_id)`","loc":"SPEC_CanvasFS_v1_1.md","values":"","tags":"docs,spec_canvasfs_v1_1","keywords":"volume_gate_id fs_set_bpage out_bpage_id fs_get_bpage bpage_id fs_get_bpage(fs, volume_gate_id, &out_bpage_id) fs_set_bpage(fs, volume_gate_id, bpage_id)","channel":"","doc_ref":"SPEC_CanvasFS_v1_1"},{"kind":"doc","key":"1. 개요","group":"Docs","desc":"CanvasOS는 1024x1024 Cell 격자 위에서 동작하는 결정론적 타일 실행 시스템이다.\n중심(512,512)에서 시작하는 Ring(MH) 스캔을 통해 모든 Cell을 순회하며,\n각 Cell의 A_word에 따라 게이트 개폐·분기·I/O를 수행한다.","loc":"SPEC_CanvasOS_QuadBoot_v1.md","values":"","tags":"docs,spec_canvasos_quadboot_v1","keywords":"Cell x1024 Ring CanvasOS A_word ","channel":"","doc_ref":"SPEC_CanvasOS_QuadBoot_v1"},{"kind":"doc","key":"2. 기본 용어","group":"Docs","desc":"| 용어 | 정의 |\n|------|------|\n| Cell | 1024x1024 격자의 단일 타일. 좌표 (x,y), 0<=x,y<1024 |\n| A_word | 32비트: [31:24]=Gate, [23:16]=Opcode, [15:0]=Arg |\n| TileGate | 4096개 게이트 슬롯. 기본 CLOSE, 명시적 OPEN만 효과 |\n| B-page | 256행 ROM. 각 행 = 규칙(Rule) 1개 |\n| CVP | CanVas Page. ABGR 순서 바이너리 포맷 |","loc":"SPEC_CanvasOS_QuadBoot_v1.md","values":"","tags":"docs,spec_canvasos_quadboot_v1","keywords":"TileGate Cell Arg x1024 ABGR ROM OPEN CLOSE page Gate CVP Page Opcode A_word CanVas Rule ","channel":"","doc_ref":"SPEC_CanvasOS_QuadBoot_v1"},{"kind":"doc","key":"3. A_word 비트 구조","group":"Docs","desc":"[31:24]  GateID   (8비트, 0x00~0xFF)\n    [23:16]  Opcode   (8비트)\n    [15: 0]  Arg      (16비트)\n\n    Opcode 테이블:\n    0x00  NOP      아무것도 하지 않음\n    0x01  OPEN     게이트 GateID를 OPEN 상태로 설정\n    0x02  CLOSE    게이트 GateID를 CLOSE 상태로 설정\n    0x03  BRANCH   Arg 좌표로 스캔 포인터 점프\n    0x04  LOAD     CVP에서 Cell 로드\n    0x05  SAVE     CVP로 Cell 저장\n    0xFF  HALT     실행 중지","loc":"SPEC_CanvasOS_QuadBoot_v1.md","values":"","tags":"docs,spec_canvasos_quadboot_v1","keywords":"x02 CVP SAVE x00 Arg x04 x03 NOP xFF Cell x01 x05 CLOSE Opcode GateID LOAD HALT OPEN BRANCH ","channel":"","doc_ref":"SPEC_CanvasOS_QuadBoot_v1"},{"kind":"doc","key":"4. QuadBoot 시퀀스","group":"Docs","desc":"1. 파워온 -> Cell(512,512) 로드\n    2. Ring(MH) 스캔 초기화: radius=0, dir=EAST\n    3. 각 Cell: A_word 디코드 -> Gate 확인 -> OPEN이면 실행\n    4. 스캔 완료 후 -> B-page 룰 적용\n    5. CVP 세이브 (ABGR 순)\n    6. 다음 프레임 반복","loc":"SPEC_CanvasOS_QuadBoot_v1.md","values":"","tags":"docs,spec_canvasos_quadboot_v1","keywords":"Cell ABGR Ring CVP EAST OPEN dir Gate page radius A_word ","channel":"","doc_ref":"SPEC_CanvasOS_QuadBoot_v1"},{"kind":"doc","key":"5. TileGate 규칙","group":"Docs","desc":"- 총 4096개 슬롯 (GateID 0x000 ~ 0xFFF)\n- 초기 상태: 전부 CLOSE\n- OPEN 명령 수신 시에만 해당 슬롯 OPEN\n- CLOSE는 명시적 CLOSE 명령 또는 리셋 시\n- Gate CLOSE 상태의 Cell은 Opcode 무시","loc":"SPEC_CanvasOS_QuadBoot_v1.md","values":"","tags":"docs,spec_canvasos_quadboot_v1","keywords":"GateID Cell x000 xFFF OPEN CLOSE Gate Opcode ","channel":"","doc_ref":"SPEC_CanvasOS_QuadBoot_v1"},{"kind":"doc","key":"6. CVP I/O 포맷","group":"Docs","desc":"파일 헤더 (8 bytes):\n      [0..1]  매직 \"CV\"\n      [2..3]  버전 0x0001\n      [4..5]  너비 (LE16)\n      [6..7]  높이 (LE16)\n\n    픽셀 데이터 (너비 x 높이 x 4 bytes):\n      각 픽셀: A_word (Alpha=Gate) -> B -> G -> R\n      저장 순서: 행 우선(row-major), 좌상단 기준","loc":"SPEC_CanvasOS_QuadBoot_v1.md","values":"","tags":"docs,spec_canvasos_quadboot_v1","keywords":"major bytes row Alpha Gate A_word LE16 x0001 ","channel":"","doc_ref":"SPEC_CanvasOS_QuadBoot_v1"},{"kind":"doc","key":"7. B-page ROM 구조","group":"Docs","desc":"총 256행. 각 행 = 16 bytes:\n      [0..3]   조건 마스크 (A_word AND mask)\n      [4..7]   조건 값    (masked == value 이면 실행)\n      [8..11]  실행 A_word\n      [12..15] 예약","loc":"SPEC_CanvasOS_QuadBoot_v1.md","values":"","tags":"docs,spec_canvasos_quadboot_v1","keywords":"value bytes mask AND A_word masked ","channel":"","doc_ref":"SPEC_CanvasOS_QuadBoot_v1"},{"kind":"doc","key":"4.0 범위 고정","group":"Docs","desc":"- Canvas = 1024×1024 고정\n- 스캔 = Ring N4 기본 (정책 교체 가능)\n- ABGR 채널 계약 유지 (A=주소, B=동작 인덱스, G=상태, R=스트림)\n- Always-ON, 신호는 CLOSE/OPEN\n\n---","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"ABGR Ring Canvas CLOSE OPEN Always ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"4.1.1 컨테이너 레이아웃","group":"Docs","desc":"- Header (고정 4KB)\n  - magic, version, endian, flags\n  - canvas_w/h (=1024/1024)\n  - root_page_id, root_bpage_chain\n  - reserved region map(최소)\n- Sections (TLV)\n  - CANVAS_BASE: 초기 캔버스(또는 sparse)\n  - WH_LANE: WhiteHole 기록 구간(선택)\n  - BH_STATE: BlackHole 상태(선택)\n  - FS_VOLUME: CanvasFS 볼륨들(선택)\n  - RULETABLE: RuleTable dump(선택)","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"version RuleTable map canvas_w CANVAS_BASE WH_LANE dump region sparse root_page_id RULETABLE CanvasFS magic Header WhiteHole root_bpage_chain reserved BH_STATE flags Sections FS_VOLUME TLV endian BlackHole ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"4.1.2 직렬화 정책","group":"Docs","desc":"- v1 최소 구현은 **RAW 덤프 + CRC32**로 시작\n- 다음 단계에서 sparse(변경 셀만)로 전환\n- Gate 상태는 bitmap(4096bit)로 저장","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"CRC32 bitmap sparse Gate bit RAW ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"4.1.3 API","group":"Docs","desc":"- cvp_save(path, EngineContext*)\n- cvp_load(path, EngineContext*)\n- cvp_validate(path) → magic/version/crc\n\n---","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"version cvp_load cvp_validate magic path crc cvp_save EngineContext ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"4.2.1 리플레이 원칙","group":"Docs","desc":"- “로그”를 별도로 쌓지 않는다.\n- WH 레코드 자체가 리플레이 소스다.\n- 같은 TimeSlice(page/bpage/gate/scan)면 결과 동일해야 함.","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"page gate scan TimeSlice bpage ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"4.2.2 리플레이 API","group":"Docs","desc":"- engctx_replay(ctx, from_tick, to_tick)\n- wh_exec_record(ctx, record) 기반으로 side-effect 재현\n- Phase 4에서 **WH opcode set 확장**:\n  - FS write pointer update\n  - gate open/close (완료)\n  - process state transition (sleep/wake/kill)\n  - commit Δ write\n\n---","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"pointer Phase effect state write close wh_exec_record open transition set to_tick sleep kill ctx update opcode side engctx_replay commit gate process wake record from_tick ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"4.3.1 최소 엔트리","group":"Docs","desc":"- EXEC_NOP\n- EXEC_GATE (tile open/close)\n- EXEC_FS (tiny/small payload write)\n- EXEC_COMMIT (Δ-Commit)","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"EXEC_GATE payload EXEC_FS tiny small EXEC_COMMIT Commit close tile open EXEC_NOP write ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"4.3.2 어댑터 체인(Format Stack)","group":"Docs","desc":"- bpage_chain을 통해 “포맷2포맷” 해석 스택 연결\n- Canvas간 통신(Phase5) 전에 로컬에서 먼저 검증\n\n---","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"Phase5 bpage_chain Canvas ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"4.4 테스트 (필수)","group":"Docs","desc":"- Determinism 테스트:\n  - 같은 CVP → 같은 tick 범위 실행 → 캔버스 해시 동일\n- Replay 테스트:\n  - tick 0..N 실행 후 저장\n  - tick 0..N을 WH 리플레이로 재생성\n  - 결과 동일\n- Gate 보호 테스트:\n  - reserved region은 어떤 경우에도 open/overwrite 금지(FreeMap 포함)\n\n---","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"overwrite CVP region FreeMap Gate open Replay reserved Determinism tick ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"4.5 산출물","group":"Docs","desc":"- docs/CVP_FORMAT_v1.md\n- src/cvp_io.c 실제 구현(현재 stub 대체)\n- tests/test_cvp.c 신규 추가\n- docs/ENGINE_CANVASOS_v1.md 업데이트(Phase4 항목)\n\n---\n끝.","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"CVP_FORMAT_v1 Phase4 test_cvp src ENGINE_CANVASOS_v1 stub docs cvp_io tests ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"Phase 4 Add-on: DevDictionary Web (Behavior-first Search)","group":"Docs","desc":"- SSOT: include/canvasos_opcodes.def, canvasos_regions.def, canvasos_bindings.def\n- Generator: tools/gen_devdict.py -> devdict_site/data/*.json\n- UI goal: search by legacy dev keywords (GateSpace, sched_tick, VOLH/VOLT, WhiteHole/BlackHole)\n- Primary: behavior -> locations list (pixel boxes + gate ranges)\n- Secondary: location lookup (x,y or gate_id) -> region + linked behaviors\n- Deploy: GitHub Pages (static)\n\n---","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"boxes Secondary BlackHole include tools SSOT GateSpace dev pixel ranges Deploy canvasos_opcodes canvasos_regions goal gate_id region sched_tick list search Pages json def Generator VOLH behavior WhiteHole locations gen_devdict data VOLT linked canvasos_bindings legacy GitHub keywords Primary location behaviors gate static devdict_site lookup ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"Determinism Lock","group":"Docs","desc":"- CVP header에 **scan_policy / bpage_version / contract_hash / wh_cap / save_tick** 고정\n- lock mismatch 시 load/validate 실패","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"contract_hash load validate CVP save_tick header scan_policy lock wh_cap mismatch bpage_version ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"WH Overflow Policy","group":"Docs","desc":"- WH는 **원형 버퍼(mod WH_CAP)**로 고정\n- replay는 **save_tick 기준 retained window**에서만 유효","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"window retained save_tick mod WH_CAP replay ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"Phase 5: IPC (WH relay)","group":"Docs","desc":"- IPC send/recv를 WH opcode(0x30)로 기록\n- proc.ipc_cursor로 **결정론적 consume**","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"opcode proc ipc_cursor IPC x30 consume recv send ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"doc","key":"Phase 5 다음 TODO","group":"Docs","desc":"- IPC record packing 확장: full 32-bit src/dst pid + payload key 분리\n- Multi-canvas routing: dst_canvas >255, adapter chain 기반 해석","loc":"TODO_PHASE4_PLAN.md","values":"","tags":"docs,todo_phase4_plan","keywords":"chain packing payload routing adapter canvas IPC key pid dst dst_canvas full src record Multi bit ","channel":"","doc_ref":"TODO_PHASE4_PLAN"},{"kind":"struct","key":"LaneDesc","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"","tags":"phase5","keywords":"LaneDesc"},{"kind":"struct","key":"LaneTable","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"","tags":"phase5","keywords":"LaneTable"},{"kind":"func","key":"lane_table_init","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"void lane_table_init(LaneTable *lt)","tags":"phase5,skeleton","keywords":"lane_table_init"},{"kind":"func","key":"lane_register","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"int  lane_register(LaneTable *lt, const LaneDesc *desc)","tags":"phase5,skeleton","keywords":"lane_register"},{"kind":"func","key":"lane_activate","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"void lane_activate(LaneTable *lt, uint8_t lane_id)","tags":"phase5,skeleton","keywords":"lane_activate"},{"kind":"func","key":"lane_deactivate","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"void lane_deactivate(LaneTable *lt, uint8_t lane_id)","tags":"phase5,skeleton","keywords":"lane_deactivate"},{"kind":"func","key":"lane_tick","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"int  lane_tick(EngineContext *ctx, LaneTable *lt, uint8_t lane_id)","tags":"phase5,skeleton","keywords":"lane_tick"},{"kind":"func","key":"lane_tick_all","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"int  lane_tick_all(EngineContext *ctx, LaneTable *lt)","tags":"phase5,skeleton","keywords":"lane_tick_all"},{"kind":"func","key":"lane_gpu_dispatch_size","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"void lane_gpu_dispatch_size(const LaneDesc *d,\n                            uint3","tags":"phase5,skeleton","keywords":"lane_gpu_dispatch_size"},{"kind":"func","key":"canvas_gpu_upload","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"int  canvas_gpu_upload(EngineContext *ctx)","tags":"phase5,skeleton","keywords":"canvas_gpu_upload"},{"kind":"func","key":"canvas_gpu_download","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"int  canvas_gpu_download(EngineContext *ctx)","tags":"phase5,skeleton","keywords":"canvas_gpu_download"},{"kind":"func","key":"canvas_gpu_dispatch_lane","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"int  canvas_gpu_dispatch_lane(uint8_t lane_id, uint32_t tick)","tags":"phase5,skeleton","keywords":"canvas_gpu_dispatch_lane"},{"kind":"const","key":"LANE_ID_SHIFT","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"24","tags":"phase5","keywords":"LANE_ID_SHIFT"},{"kind":"const","key":"LANE_ID_MASK","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"0xFFu","tags":"phase5","keywords":"LANE_ID_MASK"},{"kind":"const","key":"LANE_ID_MAX","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"256","tags":"phase5","keywords":"LANE_ID_MAX"},{"kind":"const","key":"LANE_ID_SYSTEM","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"0x00u  /* 커널/시스템 Lane */","tags":"phase5","keywords":"LANE_ID_SYSTEM"},{"kind":"const","key":"LANE_ID_USER0","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"0x01u  /* 일반 사용자 Lane 시작 */","tags":"phase5","keywords":"LANE_ID_USER0"},{"kind":"const","key":"LANE_ID_BCAST","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_lane.h 참조.","loc":"canvas_lane.h","values":"0xFFu  /* 브로드캐스트 (모든 Lane) */","tags":"phase5","keywords":"LANE_ID_BCAST"},{"kind":"struct","key":"BranchDesc","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"","tags":"phase5","keywords":"BranchDesc"},{"kind":"struct","key":"BranchTable","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"","tags":"phase5","keywords":"BranchTable"},{"kind":"struct","key":"DeltaCommit","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"","tags":"phase5","keywords":"DeltaCommit"},{"kind":"func","key":"branch_table_init","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"void branch_table_init(BranchTable *bt)","tags":"phase5,skeleton","keywords":"branch_table_init"},{"kind":"func","key":"branch_create","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"uint32_t branch_create(BranchTable *bt, uint32_t parent_id,\n                    ","tags":"phase5,skeleton","keywords":"branch_create"},{"kind":"func","key":"branch_switch","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"int branch_switch(EngineContext *ctx, BranchTable *bt, uint32_t branch_id)","tags":"phase5,skeleton","keywords":"branch_switch"},{"kind":"func","key":"branch_destroy","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"int branch_destroy(BranchTable *bt, uint32_t branch_id)","tags":"phase5,skeleton","keywords":"branch_destroy"},{"kind":"func","key":"branch_commit_delta","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"int branch_commit_delta(EngineContext *ctx, const DeltaCommit *d)","tags":"phase5,skeleton","keywords":"branch_commit_delta"},{"kind":"func","key":"branch_merge","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"int branch_merge(EngineContext *ctx, BranchTable *bt,\n                 uint32_t ","tags":"phase5,skeleton","keywords":"branch_merge"},{"kind":"func","key":"branch_scan_y_range","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"int branch_scan_y_range(EngineContext *ctx, const BranchDesc *b)","tags":"phase5,skeleton","keywords":"branch_scan_y_range"},{"kind":"func","key":"branch_parallel_tick","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"int branch_parallel_tick(EngineContext *ctx,\n                         BranchTabl","tags":"phase5,skeleton","keywords":"branch_parallel_tick"},{"kind":"func","key":"branch_table_flush","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"int branch_table_flush(EngineContext *ctx, BranchTable *bt)","tags":"phase5,skeleton","keywords":"branch_table_flush"},{"kind":"func","key":"branch_table_load","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"int branch_table_load(EngineContext *ctx, BranchTable *bt)","tags":"phase5,skeleton","keywords":"branch_table_load"},{"kind":"const","key":"PLANE_A","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"(1u << 0)","tags":"phase5","keywords":"PLANE_A"},{"kind":"const","key":"PLANE_B","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"(1u << 1)","tags":"phase5","keywords":"PLANE_B"},{"kind":"const","key":"PLANE_G","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"(1u << 2)","tags":"phase5","keywords":"PLANE_G"},{"kind":"const","key":"PLANE_R","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"(1u << 3)","tags":"phase5","keywords":"PLANE_R"},{"kind":"const","key":"PLANE_ALL","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"0x0Fu","tags":"phase5","keywords":"PLANE_ALL"},{"kind":"const","key":"BRANCH_ROOT","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"0x00000000u","tags":"phase5","keywords":"BRANCH_ROOT"},{"kind":"const","key":"BRANCH_NONE","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"0xFFFFFFFFu","tags":"phase5","keywords":"BRANCH_NONE"},{"kind":"const","key":"BRANCH_MAX","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_branch.h 참조.","loc":"canvas_branch.h","values":"256u","tags":"phase5","keywords":"BRANCH_MAX"},{"kind":"struct","key":"WH_BH_Zone","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"","tags":"phase5","keywords":"WH_BH_Zone"},{"kind":"struct","key":"MultiverseEngine","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"","tags":"phase5","keywords":"MultiverseEngine"},{"kind":"struct","key":"GpuDispatchHint","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"","tags":"phase5","keywords":"GpuDispatchHint"},{"kind":"func","key":"mve_init","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"void mve_init(MultiverseEngine *mve, EngineContext *ctx)","tags":"phase5,skeleton","keywords":"mve_init"},{"kind":"func","key":"mve_add_lane","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"int mve_add_lane(MultiverseEngine *mve, EngineContext *ctx,\n                 uin","tags":"phase5,skeleton","keywords":"mve_add_lane"},{"kind":"func","key":"mve_add_universe","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"int mve_add_universe(MultiverseEngine *mve, EngineContext *ctx,\n                ","tags":"phase5,skeleton","keywords":"mve_add_universe"},{"kind":"func","key":"mve_enable_y_time","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"void mve_enable_y_time(MultiverseEngine *mve, uint16_t y_tick_stride)","tags":"phase5,skeleton","keywords":"mve_enable_y_time"},{"kind":"func","key":"mve_tick","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"int mve_tick(MultiverseEngine *mve, EngineContext *ctx)","tags":"phase5,skeleton","keywords":"mve_tick"},{"kind":"func","key":"mve_tick_lu","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"int mve_tick_lu(MultiverseEngine *mve, EngineContext *ctx,\n                uint8","tags":"phase5,skeleton","keywords":"mve_tick_lu"},{"kind":"func","key":"mve_branch_fork_tick","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"int mve_branch_fork_tick(MultiverseEngine *mve, EngineContext *ctx,\n            ","tags":"phase5,skeleton","keywords":"mve_branch_fork_tick"},{"kind":"func","key":"mve_print_capacity","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"void mve_print_capacity(const MultiverseEngine *mve)","tags":"phase5,skeleton","keywords":"mve_print_capacity"},{"kind":"func","key":"mve_save_meta","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"int mve_save_meta(const MultiverseEngine *mve, const char *path)","tags":"phase5,skeleton","keywords":"mve_save_meta"},{"kind":"func","key":"mve_load_meta","group":"Phase5","channel":"B","desc":"Phase 5 함수 스켈레톤. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"int mve_load_meta(MultiverseEngine *mve, const char *path)","tags":"phase5,skeleton","keywords":"mve_load_meta"},{"kind":"const","key":"UNIVERSE_MAX","group":"Phase5","channel":"A","desc":"Phase 5 상수. canvas_multiverse.h 참조.","loc":"canvas_multiverse.h","values":"16u   /* 2^4 (ABGR 조합) */","tags":"phase5","keywords":"UNIVERSE_MAX"},{"kind":"struct","key":"TickBoundaryGuard","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체 (canvas_determinism.h). 결정론 규약 기반.","loc":"canvas_determinism.h","values":"","tags":"phase5,determinism","keywords":"TickBoundaryGuard"},{"kind":"struct","key":"BhCompressRule","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체 (canvas_bh_compress.h). 결정론 규약 기반.","loc":"canvas_bh_compress.h","values":"","tags":"phase5,determinism","keywords":"BhCompressRule"},{"kind":"struct","key":"BhSummary","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체 (canvas_bh_compress.h). 결정론 규약 기반.","loc":"canvas_bh_compress.h","values":"","tags":"phase5,determinism","keywords":"BhSummary"},{"kind":"struct","key":"BhStats","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체 (canvas_bh_compress.h). 결정론 규약 기반.","loc":"canvas_bh_compress.h","values":"","tags":"phase5,determinism","keywords":"BhStats"},{"kind":"enum","key":"BhCompressRule","group":"Phase5","channel":"B","desc":"Phase 5 열거형 (canvas_bh_compress.h).","loc":"canvas_bh_compress.h","values":"","tags":"phase5","keywords":"BhCompressRule"},{"kind":"func","key":"bh_analyze_window","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_bh_compress.h). DK 결정론 규약 준수.","loc":"canvas_bh_compress.h","values":"","tags":"phase5,determinism,skeleton","keywords":"bh_analyze_window"},{"kind":"func","key":"bh_compress","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_bh_compress.h). DK 결정론 규약 준수.","loc":"canvas_bh_compress.h","values":"","tags":"phase5,determinism,skeleton","keywords":"bh_compress"},{"kind":"func","key":"bh_replay_summary","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_bh_compress.h). DK 결정론 규약 준수.","loc":"canvas_bh_compress.h","values":"","tags":"phase5,determinism,skeleton","keywords":"bh_replay_summary"},{"kind":"func","key":"bh_run_all","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_bh_compress.h). DK 결정론 규약 준수.","loc":"canvas_bh_compress.h","values":"","tags":"phase5,determinism,skeleton","keywords":"bh_run_all"},{"kind":"func","key":"bh_get_stats","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_bh_compress.h). DK 결정론 규약 준수.","loc":"canvas_bh_compress.h","values":"","tags":"phase5,determinism,skeleton","keywords":"bh_get_stats"},{"kind":"func","key":"bh_print_stats","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_bh_compress.h). DK 결정론 규약 준수.","loc":"canvas_bh_compress.h","values":"","tags":"phase5,determinism,skeleton","keywords":"bh_print_stats"},{"kind":"const","key":"BH_IDLE_MIN_TICKS","group":"Phase5","channel":"A","desc":"Phase 5 상수/매크로 (canvas_bh_compress.h). 결정론 규약.","loc":"canvas_bh_compress.h","values":"16u   /* IDLE 감지 최소 구간 (틱) */","tags":"phase5","keywords":"BH_IDLE_MIN_TICKS"},{"kind":"const","key":"BH_LOOP_MIN_REPEAT","group":"Phase5","channel":"A","desc":"Phase 5 상수/매크로 (canvas_bh_compress.h). 결정론 규약.","loc":"canvas_bh_compress.h","values":"3u    /* LOOP 감지 최소 반복 횟수 */","tags":"phase5","keywords":"BH_LOOP_MIN_REPEAT"},{"kind":"const","key":"BH_BURST_THRESHOLD","group":"Phase5","channel":"A","desc":"Phase 5 상수/매크로 (canvas_bh_compress.h). 결정론 규약.","loc":"canvas_bh_compress.h","values":"8u    /* BURST 감지 임계치 (K틱 내 N개) */","tags":"phase5","keywords":"BH_BURST_THRESHOLD"},{"kind":"const","key":"BH_BURST_WINDOW","group":"Phase5","channel":"A","desc":"Phase 5 상수/매크로 (canvas_bh_compress.h). 결정론 규약.","loc":"canvas_bh_compress.h","values":"4u    /* BURST 감지 시간 창 (틱) */","tags":"phase5","keywords":"BH_BURST_WINDOW"},{"kind":"struct","key":"MergePolicy","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체 (canvas_merge.h). 결정론 규약 기반.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism","keywords":"MergePolicy"},{"kind":"struct","key":"ConflictDisposition","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체 (canvas_merge.h). 결정론 규약 기반.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism","keywords":"ConflictDisposition"},{"kind":"struct","key":"Delta","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체 (canvas_merge.h). 결정론 규약 기반.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism","keywords":"Delta"},{"kind":"struct","key":"MergeConfig","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체 (canvas_merge.h). 결정론 규약 기반.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism","keywords":"MergeConfig"},{"kind":"struct","key":"MergeCtx","group":"Phase5","channel":"A,B,G","desc":"Phase 5 구조체 (canvas_merge.h). 결정론 규약 기반.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism","keywords":"MergeCtx"},{"kind":"enum","key":"MergePolicy","group":"Phase5","channel":"B","desc":"Phase 5 열거형 (canvas_merge.h).","loc":"canvas_merge.h","values":"","tags":"phase5","keywords":"MergePolicy"},{"kind":"enum","key":"ConflictDisposition","group":"Phase5","channel":"B","desc":"Phase 5 열거형 (canvas_merge.h).","loc":"canvas_merge.h","values":"","tags":"phase5","keywords":"ConflictDisposition"},{"kind":"func","key":"merge_ctx_begin","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_merge.h). DK 결정론 규약 준수.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism,skeleton","keywords":"merge_ctx_begin"},{"kind":"func","key":"merge_add_delta","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_merge.h). DK 결정론 규약 준수.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism,skeleton","keywords":"merge_add_delta"},{"kind":"func","key":"merge_resolve_conflicts","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_merge.h). DK 결정론 규약 준수.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism,skeleton","keywords":"merge_resolve_conflicts"},{"kind":"func","key":"merge_apply","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_merge.h). DK 결정론 규약 준수.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism,skeleton","keywords":"merge_apply"},{"kind":"func","key":"merge_ctx_end","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_merge.h). DK 결정론 규약 준수.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism,skeleton","keywords":"merge_ctx_end"},{"kind":"func","key":"merge_run","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_merge.h). DK 결정론 규약 준수.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism,skeleton","keywords":"merge_run"},{"kind":"func","key":"merge_find_existing","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_merge.h). DK 결정론 규약 준수.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism,skeleton","keywords":"merge_find_existing"},{"kind":"func","key":"merge_delta_cmp_cell_index","group":"Phase5","channel":"B","desc":"Phase 5 함수 (canvas_merge.h). DK 결정론 규약 준수.","loc":"canvas_merge.h","values":"","tags":"phase5,determinism,skeleton","keywords":"merge_delta_cmp_cell_index"},{"kind":"const","key":"MERGE_MAX_DELTAS","group":"Phase5","channel":"A","desc":"Phase 5 상수/매크로 (canvas_merge.h). 결정론 규약.","loc":"canvas_merge.h","values":"1024u","tags":"phase5","keywords":"MERGE_MAX_DELTAS"},{"kind":"rule","key":"[DK-1] Tick Boundary","group":"Phase5","channel":"B","desc":"Δ-Commit / Merge / BH는 반드시 WH 프레임(틱) 경계에서만 실행. mid-tick 실행은 결정론 위반. CANVAS_DK_STRICT 모드에서 abort() 강제.","loc":"canvas_determinism.h","values":"TickBoundaryGuard + ASSERT_TICK_BOUNDARY()","tags":"phase5,determinism,dk","keywords":"tick boundary DK-1 TickBoundaryGuard merge commit bh"},{"kind":"rule","key":"[DK-2] Integer Only","group":"Phase5","channel":"B","desc":"결정론 경계 내부 float/double 금지. GPU는 rgba8ui/u32/u16/u8 정수 텍셀만. DK_INT(expr) 매크로로 컴파일 타임 타입 강제 (C11 _Generic).","loc":"canvas_determinism.h","values":"DK_INT(x)","tags":"phase5,determinism,dk","keywords":"integer float DK-2 DK_INT rgba8ui GPU"},{"kind":"rule","key":"[DK-3] Fixed Reduction Order","group":"Phase5","channel":"B","desc":"병렬/GPU 리덕션은 cell_index 오름차순(y*W+x)으로만. dk_cell_index() 공식 고정. Merge 적용도 오름차순. 역순/랜덤 금지.","loc":"canvas_determinism.h","values":"dk_cell_index(x,y) = y*CANVAS_W+x","tags":"phase5,determinism,dk","keywords":"reduction order DK-3 dk_cell_index merge apply"},{"kind":"rule","key":"[DK-4] Normalize (Clamp)","group":"Phase5","channel":"B","desc":"G 채널 에너지, B 채널 opcode 결과는 DK_CLAMP_U8/U16/U32 통과 필수. ADDITIVE_G merge 시 자동 적용.","loc":"canvas_determinism.h","values":"DK_CLAMP_U8/U16/U32","tags":"phase5,determinism,dk","keywords":"normalize clamp DK-4 DK_CLAMP G channel energy"},{"kind":"rule","key":"[DK-5] Noise Floor (±1 흡수)","group":"Phase5","channel":"B","desc":"동일 셀에 두 Lane이 ±1 차이 값을 쓸 때 결정론적 평균 적용. DK_ABSORB_NOISE(a,b)=(a+b+1)/2 (정수, 올림 없음).","loc":"canvas_determinism.h","values":"DK_ABSORB_NOISE(a,b)","tags":"phase5,determinism,dk","keywords":"noise floor DK-5 DK_ABSORB_NOISE average lane"},{"kind":"rule","key":"[BH] 시간 의미 압축 3종","group":"Phase5","channel":"B","desc":"BH는 삭제 아니라 치환. BH_RULE_IDLE(무변화 구간), BH_RULE_LOOP(반복 패턴), BH_RULE_BURST(폭주 이벤트). 치환 후에도 원본 해시(참조 링크) 보존. 틱 경계에서만 실행(DK-1).","loc":"canvas_bh_compress.h","values":"BH_IDLE/LOOP/BURST","tags":"phase5,bh,determinism","keywords":"BH compress IDLE LOOP BURST summary tick boundary hash preserve"},{"kind":"rule","key":"[MERGE] 충돌 정책 확정","group":"Phase5","channel":"B","desc":"M-1: 틱 경계 실행만. M-2: 동일 tick+셀 마지막 Δ wins, before 최초 보존. M-3: LOCK(gate CLOSE) 우선, 다음 plane_mask 우선순위. M-4: CONFLICT_RECORD/GATE_CLOSE/IGNORE 중 1택.","loc":"canvas_merge.h","values":"MERGE_LAST_WINS/FIRST_WINS/ADDITIVE_G/MAX_G/LOCK_WINS/CUSTOM","tags":"phase5,merge,determinism","keywords":"merge conflict M-1 M-2 M-3 M-4 LOCK_WINS tick boundary delta"},{"kind": "struct", "key": "Tervas", "group": "Phase7", "channel": "", "desc": "Phase-7 Tervas Canvas Terminal 최상위 구조체. snapshot, filter, running, renderer_backend. READ-ONLY (R-4).", "loc": "include/tervas/tervas_core.h", "values": "", "tags": "phase7,tervas", "keywords": "Tervas tervas_init tervas_free Canvas Terminal READ-ONLY R-4"},{"kind": "struct", "key": "TvSnapshot", "group": "Phase7", "channel": "", "desc": "tick boundary 이후 캡처된 엔진 상태 사본. FULL(8MB)/WINDOW(viewport)/COMPACT(sparse) 3모드.", "loc": "include/tervas/tervas_core.h", "values": "", "tags": "phase7,tervas,snapshot", "keywords": "TvSnapshot TV_SNAP_FULL TV_SNAP_WINDOW TV_SNAP_COMPACT snapshot"},{"kind": "struct", "key": "TvFilter", "group": "Phase7", "channel": "", "desc": "Projection 필터 상태. mode, A/B 값 집합, zoom, pan, viewport, snap_mode.", "loc": "include/tervas/tervas_core.h", "values": "", "tags": "phase7,tervas", "keywords": "TvFilter TvProjectionMode a_values b_values zoom pan viewport"},{"kind": "struct", "key": "TvRenderCell", "group": "Phase7", "channel": "", "desc": "Projection 결과 표준 포맷. 모든 Renderer Backend는 이 포맷만 소비. 좌표, visible, style 비트, ABGR 원본값. sizeof=16.", "loc": "include/tervas/tervas_render_cell.h", "values": "sizeof=16", "tags": "phase7,tervas,render", "keywords": "TvRenderCell TV_STYLE_WH TV_STYLE_BH TV_STYLE_A_MATCH TV_STYLE_OVERLAP render cell"},{"kind": "struct", "key": "TvFrame", "group": "Phase7", "channel": "", "desc": "Projection→Renderer 전달 단위. TvRenderCell[] + tick/통계. TV_FRAME_MAX_CELLS=2048.", "loc": "include/tervas/tervas_render_cell.h", "values": "2048", "tags": "phase7,tervas,frame", "keywords": "TvFrame TV_FRAME_MAX_CELLS tv_build_frame wh_active bh_active"},{"kind": "struct", "key": "TvCmdDispatch", "group": "Phase7", "channel": "", "desc": "명령 디스패치 테이블 레코드. prefix/bridge/proj/render_effect/eng_scope/on_error/cost/desc 8열. 22개 명령.", "loc": "include/tervas/tervas_dispatch.h", "values": "22 commands", "tags": "phase7,tervas,dispatch", "keywords": "TvCmdDispatch TV_DISPATCH_TABLE tv_dispatch_find dispatch SSOT"},{"kind": "enum", "key": "TvProjectionMode", "group": "Phase7", "channel": "", "desc": "ALL/A/B/AB_UNION/AB_OVERLAP/WH/BH 7종.", "loc": "include/tervas/tervas_core.h", "values": "0..6", "tags": "phase7,tervas,projection", "keywords": "TV_PROJ_ALL TV_PROJ_A TV_PROJ_B TV_PROJ_WH TV_PROJ_BH projection"},{"kind": "enum", "key": "TvError", "group": "Phase7", "channel": "", "desc": "Tervas 오류 코드. TV_OK(0)~TV_ERR_CMD(-8) 9종.", "loc": "include/tervas/tervas_core.h", "values": "0..-8", "tags": "phase7,tervas,error", "keywords": "TV_OK TV_ERR_OOB TV_ERR_NO_REGION TV_ERR_OVERFLOW TV_ERR_CMD error"},{"kind": "enum", "key": "TvRendererBackend", "group": "Phase7", "channel": "", "desc": "ASCII→NCurses→SDL2→OpenGL 업그레이드 경로.", "loc": "include/tervas/tervas_core.h", "values": "0..3", "tags": "phase7,tervas,renderer", "keywords": "TV_RENDER_ASCII TV_RENDER_NCURSES TV_RENDER_SDL2 TV_RENDER_OPENGL"},{"kind": "func", "key": "tervas_bridge_snapshot", "group": "Phase7", "channel": "", "desc": "tick boundary 이후 엔진 상태를 스냅샷. FULL/WINDOW/COMPACT. READ-ONLY (R-4).", "loc": "include/tervas/tervas_bridge.h", "values": "", "tags": "phase7,tervas,bridge", "keywords": "tervas_bridge_snapshot snapshot READ-ONLY R-4 R-5 memcpy"},{"kind": "func", "key": "tv_cell_visible", "group": "Phase7", "channel": "", "desc": "Projection 핵심 함수. 정수 연산만 (R-6). 동일 입력 → 동일 결과.", "loc": "include/tervas/tervas_projection.h", "values": "", "tags": "phase7,tervas,projection", "keywords": "tv_cell_visible projection R-6 integer determinism"},{"kind": "func", "key": "tv_build_frame", "group": "Phase7", "channel": "", "desc": "snapshot → TvFrame. style bits 결정. 정수 연산만 (R-6).", "loc": "include/tervas/tervas_projection.h", "values": "", "tags": "phase7,tervas,frame", "keywords": "tv_build_frame TvFrame TvRenderCell style bits renderer-agnostic"},{"kind": "func", "key": "tv_cli_exec", "group": "Phase7", "channel": "", "desc": "CLI 명령 실행. dispatch 테이블 기반 22개 명령 처리.", "loc": "include/tervas/tervas_cli.h", "values": "", "tags": "phase7,tervas,cli", "keywords": "tv_cli_exec CLI command dispatch view inspect tick region quick"},{"kind": "const", "key": "TV_STYLE_* 비트플래그", "group": "Phase7", "channel": "", "desc": "WH/BH/A_MATCH/B_MATCH/OVERLAP/GATE_ON/INACTIVE. 렌더러 시각화용.", "loc": "include/tervas/tervas_render_cell.h", "values": "0x01..0x40", "tags": "phase7,tervas,style", "keywords": "TV_STYLE_WH TV_STYLE_BH TV_STYLE_A_MATCH TV_STYLE_OVERLAP TV_STYLE_GATE_ON style"},{"kind": "rule", "key": "[R-1] Y축=시간축", "group": "Phase7", "channel": "", "desc": "Y↑=과거, Y↓=미래. 방향 역전 금지. 위반 시 replay 파손.", "loc": "include/tervas/tervas_core.h", "values": "", "tags": "phase7,immutable", "keywords": "R-1 Y-axis time immutable"},{"kind": "rule", "key": "[R-4] Tervas READ-ONLY", "group": "Phase7", "channel": "", "desc": "Tervas는 엔진 상태를 절대 수정하지 않는다. 위반 시 hash 오염.", "loc": "include/tervas/tervas_core.h", "values": "", "tags": "phase7,immutable", "keywords": "R-4 READ-ONLY immutable hash"},{"kind": "rule", "key": "[R-6] 정수 연산만", "group": "Phase7", "channel": "", "desc": "Projection에서 float 금지. DK-2 상속.", "loc": "include/tervas/tervas_core.h", "values": "", "tags": "phase7,immutable,determinism", "keywords": "R-6 integer float DK-2 projection"}];
+
+const ARCH_MAP = [
+  {n:"Q0",   i:"(0,0)→(511,511)",     c:"dim",  s:""},
+  {n:"Q1",   i:"(512,0)→(1023,511)",  c:"dim",  s:""},
+  {n:"CTRL", i:"CR0..CR3 kernel",     c:"ctrl", s:"Control Region"},
+  {n:"CVP",  i:"header+TLV 8.5MB",    c:"cvp",  s:"CVP"},
+  {n:"Q2",   i:"(0,512)→(511,639)",   c:"dim",  s:""},
+  {n:"P5-Q2",i:"Lane1 WH zone",       c:"p5",   s:"Phase5"},
+  {n:"WH",   i:"(512,512) 512×128",   c:"wh",   s:"WH"},
+  {n:"BH",   i:"(512,640) 512×64",    c:"bh",   s:"BH"},
+  {n:"Q3",   i:"(0,704)→(511,1023)",  c:"dim",  s:""},
+  {n:"Lane0",i:"SYSTEM lane gate0..63",c:"p5",  s:"Phase5"},
+  {n:"MVE",  i:"multiverse engine",   c:"p5",   s:"Phase5"},
+  {n:"BH-C", i:"BH compress IDLE/LOOP/BURST", c:"bh",  s:"[BH]"},
+  {n:"DK-1", i:"Tick Boundary rule",          c:"p5",  s:"DK-1"},
+  {n:"CVP§", i:"TLV SEC 1..5",        c:"cvp",  s:"CVP_SECTIONS"},
+];
+
+const CAP = [
+  {v:"8 MB",     l:"Canvas 메모리"},
+  {v:"4,096",    l:"Gate (타일)"},
+  {v:"256",      l:"Lane (A채널)"},
+  {v:"16",       l:"Universe (채널조합)"},
+  {v:"32,768",   l:"WH 레코드/lane"},
+  {v:"~499K",    l:"CanvasFS 슬롯"},
+  {v:"∞",        l:"FS 외부 참조"},
+];
+
+/* ── state ── */
+let activeTab = "Home";
+let dbt;
+
+/* ── helpers ── */
+function esc(s){
+  return (s||'').replace(/[&<>"']/g, c=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function chBadges(ch){
+  if(!ch) return '';
+  return [...new Set((ch||'').split(/[,\s]+/).filter(x=>x))]
+    .filter(x=>['A','B','G','R'].includes(x))
+    .map(x=>`<span class="badge ${x}">${x}</span>`).join('');
+}
+
+function groupColor(g){
+  const m={'Core':'gCore','Engine':'gEngine','Filesystem':'gFilesystem',
+            'I/O':'gIO','IO':'gIO','Docs':'gDocs','Phase5':'gPhase5'};
+  return m[g]||'gCore';
+}
+
+/* ── arch map ── */
+(function(){
+  const el = document.getElementById('arch-map');
+  el.className = 'arch-map';
+  ARCH_MAP.forEach(t=>{
+    const d = document.createElement('div');
+    d.className=`am ${t.c}${t.s?' click':''}`;
+    d.innerHTML=`<div class="am-name">${t.n}</div><div class="am-info">${t.i}</div>`;
+    if(t.s) d.onclick=()=>doSearch(t.s);
+    el.appendChild(d);
+  });
+})();
+
+/* ── cap bar ── */
+(function(){
+  const el = document.getElementById('cap-bar');
+  el.className = 'cap-bar';
+  CAP.forEach((c,i)=>{
+    if(i) el.insertAdjacentHTML('beforeend','<span class="cap-sep">·</span>');
+    el.insertAdjacentHTML('beforeend',
+      `<div class="cap-item"><div class="cap-val">${c.v}</div><div class="cap-label">${c.l}</div></div>`);
+  });
+})();
+
+/* ── card render ── */
+function cardHTML(item, idx){
+  const isDoc = item.kind === 'doc';
+  const isP5  = item.group === 'Phase5';
+  const gc = groupColor(item.group||'Core');
+  
+  let grpBadge;
+  if(isP5)  grpBadge = `<span class="badge p5b">P5</span>`;
+  else if(isDoc) grpBadge = `<span class="badge dob">DOC</span>`;
+  else grpBadge = `<span class="badge grp">${esc(item.group||'')}</span>`;
+
+  const kindBadge = `<span class="badge">${esc(item.kind||'').toUpperCase()}</span>`;
+  const chB = chBadges(item.channel||'');
+
+  /* keywords as clickable pills */
+  const kws = (item.keywords||'').split(/\s+/).filter(Boolean).slice(0,12);
+  const kwH = kws.map(k=>`<span class="kw" onclick="doSearch('${k}')">${k}</span>`).join('');
+
+  /* doc body preview */
+  const docPreview = isDoc && item.desc 
+    ? `<div class="doc-body">${esc(item.desc.substring(0,500))}</div>` 
+    : '';
+
+  return `<div class="card ${gc}" id="c${idx}" style="animation-delay:${Math.min(idx*.02,.25)}s">
+    <div class="head" onclick="toggle(${idx})">
+      <div class="key">${esc(item.key)}</div>
+      ${grpBadge}${kindBadge}${chB}
+      <div class="chev">▶</div>
+    </div>
+    <div class="body">
+      <p class="desc">${esc(item.desc||'')}</p>
+      ${docPreview}
+      <div class="grid">
+        <div class="k">LOCATION</div><div class="v">${esc(item.loc||'')}</div>
+        ${item.values?`<div class="k">VALUES</div><div class="v">${esc(item.values)}</div>`:''}        ${item.tags?`<div class="k">TAGS</div><div class="v">${esc(item.tags)}</div>`:''}        ${kwH?`<div class="k">KEYWORDS</div><div class="v">${kwH}</div>`:''}      </div>
+    </div>
+  </div>`;
+}
+
+/* ── scoring ── */
+function score(item, toks){
+  if(!toks.length) return 1;
+  const hay = [item.key,item.desc,item.loc,item.values||'',
+                item.tags||'',item.keywords||'',item.group||'',item.kind||''].join(' ').toLowerCase();
+  let hit=0;
+  for(const t of toks) if(hay.includes(t)) hit++;
+  return hit/toks.length;
+}
+
+/* ── render ── */
+function render(){
+  const q = document.getElementById('search').value.trim();
+  const toks = q.toLowerCase().split(/\s+/).filter(Boolean);
+
+  let items = DATA;
+
+  /* tab filter */
+  if(activeTab==='Home'){
+    /* 전체 — arch map, cap bar 표시 */
+    document.getElementById('arch-map').style.display='';
+    document.getElementById('cap-bar').style.display='';
+  } else {
+    document.getElementById('arch-map').style.display='none';
+    document.getElementById('cap-bar').style.display='none';
+  }
+
+  if(activeTab==='Phase5-DK')  items=items.filter(x=>x.tags&&x.tags.includes('dk'));
+  else if(activeTab==='Phase5-BH')  items=items.filter(x=>x.tags&&x.tags.includes('bh'));
+  else if(activeTab==='Phase5-MG')  items=items.filter(x=>x.tags&&x.tags.includes('merge'));
+  else if(activeTab==='Docs')       items=items.filter(x=>x.group==='Docs');
+  else if(activeTab.startsWith('Docs-')){
+    const dk=activeTab.replace('Docs-','');
+    items=items.filter(x=>x.group==='Docs'&&(x.loc||'').startsWith(dk));
+  }
+  else if(activeTab==='Phase5') items=items.filter(x=>x.group==='Phase5');
+  else if(activeTab==='Phase7') items=items.filter(x=>x.group==='Phase7');
+  else if(activeTab!=='Home')   items=items.filter(x=>(x.group||'')==activeTab);
+
+  if(toks.length){
+    items=items.map(x=>{return {x,s:score(x,toks)}})
+               .filter(o=>o.s>0)
+               .sort((a,b)=>b.s-a.s)
+               .map(o=>o.x);
+  }
+
+  const meta=document.getElementById('meta');
+  const tabColor=activeTab.startsWith('Docs')?'hi2':'hi';
+  meta.innerHTML=toks.length
+    ?`<span class="hi">${items.length}</span> results · "<span class="hi">${esc(q)}</span>" · tab=<span class="${tabColor}">${esc(activeTab)}</span>`
+    :`<span class="hi">${items.length}</span> entries · tab=<span class="${tabColor}">${esc(activeTab)}</span>`;
+
+  const cards=document.getElementById('cards');
+  if(!items.length){
+    cards.innerHTML=`<div class="empty">검색 결과 없음: "<em>${esc(q)}</em>" — 시도: CVP_LOCK_SKIP, LaneID, branch, WH_CAP, ipc_cursor</div>`;
+    return;
+  }
+  cards.innerHTML=items.map((x,i)=>cardHTML(x,i)).join('');
+}
+
+function toggle(i){document.getElementById('c'+i)?.classList.toggle('open');}
+function doSearch(kw){
+  document.getElementById('search').value=kw;
+  render();
+}
+
+/* ── nav ── */
+document.querySelectorAll('.nav button[data-tab]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
+    

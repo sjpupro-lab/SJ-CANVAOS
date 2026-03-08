@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ENGINE_CANVASOS_v1 - SJ CANVAS OS Docs</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+main{padding:20px; max-width: 980px; margin: 0 auto;}
+pre.code{background:#0b0d10; border:1px solid #2a2f36; padding:12px; border-radius:10px; overflow:auto;}
+code{background:#0b0d10; border:1px solid #2a2f36; padding:2px 6px; border-radius:6px;}
+.spacer{height:10px;}
+</style>
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="../index.html">← 사전으로</a></div>
+  <h1>ENGINE_CANVASOS_v1</h1>
+  <h1>CanvasOS Engine Specification v1.0</h1>
+<h2>Always-ON Spatial Execution Model</h2>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>0. Core Philosophy</h2>
+<div class='spacer'></div>
+<p>CanvasOS는 기본적으로 **항상 ON 상태**이다.</p>
+<div class='spacer'></div>
+<p>제어는 ON 신호가 아니라,</p>
+<p>**차단(CLOSE)을 기본값으로 두고 통과(OPEN)만 흐르게 하는 방식**으로 수행한다.</p>
+<div class='spacer'></div>
+<p>즉:</p>
+<ul>
+<li>실행은 &quot;켜기&quot;가 아니라</li>
+<li>**차단을 신호로 처리하는 구조**이다.</li>
+</ul>
+<div class='spacer'></div>
+<p>이 구조는 기존 인터럽트/컨텍스트 스위치 중심 OS와 다르게,</p>
+<p>공간 기반 제어 모델을 따른다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>1. Fundamental Data Model</h2>
+<div class='spacer'></div>
+<h3>1.1 Cell Structure (ABGR Contract)</h3>
+<div class='spacer'></div>
+<p>Each Cell consists of:</p>
+<ul>
+<li>**A_word (u32)**  → Spatial Address Layer (Where)</li>
+<li>**B (u8)**        → Behavior Layer (What)</li>
+<li>**G (u8)**        → State Layer (How it is)</li>
+<li>**R (u8)**        → Stream Layer (Data body)</li>
+<li>**pad (u8)**      → Reserved / Extension</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>2. Channel Contract (Immutable)</h2>
+<div class='spacer'></div>
+<h3>2.1 A — Spatial Address Layer (Where)</h3>
+<div class='spacer'></div>
+<p>A는 다음만 허용된다:</p>
+<ul>
+<li>주소 (tile / cell / slot / chain pointer)</li>
+<li>링크 (next/ref)</li>
+<li>공간 ID / 페이지 ID / 볼륨 ID</li>
+<li>클래스/공간 계층 ID (공간 분류)</li>
+</ul>
+<div class='spacer'></div>
+<p>❗ **A에는 명령(opcode)을 두지 않는다.**  </p>
+<p>A는 항상 **Where**만 정의한다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h3>2.2 B — Behavior Layer (What)</h3>
+<div class='spacer'></div>
+<p>B는 다음만 허용된다:</p>
+<ul>
+<li>명령 인덱스 (opcode index)</li>
+<li>타입 (DAT/META/DIR/FRE/VOLH 등)</li>
+<li>슬롯 클래스 (TINY/SMALL/LARGE)</li>
+<li>B-page ID / Adapter ID</li>
+<li>MicroStep / RuleTable Index</li>
+</ul>
+<div class='spacer'></div>
+<p>❗ **B에는 주소를 저장하지 않는다.**  </p>
+<p>B는 항상 **What**만 정의한다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h3>2.3 G — State Layer (How it is)</h3>
+<div class='spacer'></div>
+<p>G는 상태 관련 값만 가진다:</p>
+<ul>
+<li>길이 (short len)</li>
+<li>상태 플래그</li>
+<li>버전 / 락 / 검증 상태</li>
+<li>에너지/예산 상태(스케줄러 연동)</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h3>2.4 R — Stream Layer (Data body)</h3>
+<div class='spacer'></div>
+<p>R은 데이터 스트림 전용이다:</p>
+<ul>
+<li>파일 payload</li>
+<li>Δ 기록 데이터</li>
+<li>연속 접근 데이터</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h3>2.5 복합 의미 금지 규칙</h3>
+<div class='spacer'></div>
+<p>하나의 채널에 주소 + 명령 + 상태를 혼합하지 않는다.  </p>
+<p>복합 의미는 반드시 **RuleTable(B-page)**에서 조합한다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>3. RuleTable (B-page Engine)</h2>
+<div class='spacer'></div>
+<p>B는 단순 인덱스이다.  </p>
+<p>실제 동작 의미는 <code>RuleTable[B]</code>에서 정의된다.</p>
+<div class='spacer'></div>
+<p>RuleTable은 다음을 포함할 수 있다:</p>
+<ul>
+<li>addr_mode</li>
+<li>exec_mode</li>
+<li>state_policy</li>
+<li>stream_policy</li>
+<li>adapter chain</li>
+</ul>
+<div class='spacer'></div>
+<p>RuleTable은 반드시:</p>
+<ul>
+<li>**가역성(encode/decode 1:1)**</li>
+<li>**결정론(deterministic)**</li>
+</ul>
+<div class='spacer'></div>
+<p>을 만족해야 한다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>4. Execution Model</h2>
+<div class='spacer'></div>
+<h3>4.1 Always-ON + Gate Filtering</h3>
+<div class='spacer'></div>
+<p>한 Tick은 다음 순서를 따른다:</p>
+<div class='spacer'></div>
+<p>1) Observe</p>
+<ul>
+<li>PageSelector 적용</li>
+<li>GateSet 적용</li>
+<li>ActiveSet 산출 (살아남은 신호)</li>
+</ul>
+<div class='spacer'></div>
+<p>2) Interpret</p>
+<ul>
+<li>ActiveSet 셀을 B-page 체인으로 해석</li>
+</ul>
+<div class='spacer'></div>
+<p>3) Commit</p>
+<ul>
+<li>변경사항은 Δ-Commit으로 기록 (TimeLane)</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>5. TimeMachine Engine</h2>
+<div class='spacer'></div>
+<p>TimeMachine은 로그 파일이 아니라, **공간 기반 시간 모델**이다.</p>
+<div class='spacer'></div>
+<h3>5.1 Time Definition</h3>
+<ul>
+<li>**Y축은 시간 진행 방향**이다.</li>
+<li>각 Quadrant는 중심에서 외곽으로 시간 진행을 가진다(정책으로 고정).</li>
+</ul>
+<div class='spacer'></div>
+<h3>5.2 TimeSlice</h3>
+<p>TimeSlice는 다음으로 정의된다:</p>
+<ul>
+<li>page_id</li>
+<li>bpage_chain</li>
+<li>gate_snapshot</li>
+<li>scan_state</li>
+</ul>
+<div class='spacer'></div>
+<p>이 조합이 동일하면 결과는 항상 동일해야 한다.</p>
+<div class='spacer'></div>
+<h3>5.3 Δ-Commit Rule</h3>
+<p>모든 상태 변화는:</p>
+<ul>
+<li>TimeLane 영역에 기록된다.</li>
+<li>기존 상태를 덮어쓰지 않는다.</li>
+<li>과거는 변경되지 않는다(읽기 전용).</li>
+</ul>
+<div class='spacer'></div>
+<p>이전 픽셀로 이동 = 디버깅(타임머신).</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<div class='spacer'></div>
+<h2>5.4 WhiteHole / BlackHole Tick Space (WH/BH)</h2>
+<div class='spacer'></div>
+<p>CanvasOS는 Tick 단위 동작을 위해, Q3(우하 정배열 512×512) 상단에</p>
+<p>Tick 전용 공간을 고정 배치한다.</p>
+<div class='spacer'></div>
+<ul>
+<li>WhiteHole(WH): Tick 증가에 따라 기록이 &quot;추가(append)&quot;되는 공간</li>
+<li>BlackHole(BH): Tick 진행에 따라 값이 &quot;감소(decay)&quot;하는 공간</li>
+</ul>
+<div class='spacer'></div>
+<p>WH/BH는 Always-ON 캔버스 위에서 Gate(CLOSE/OPEN)로만 흐름을 제어한다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h3>5.4.1 위치/크기 (Q3 Top Allocation)</h3>
+<div class='spacer'></div>
+<p>Q3 영역:</p>
+<ul>
+<li>x: 512..1023 (width = 512)</li>
+<li>y: 512..1023 (height = 512)</li>
+</ul>
+<div class='spacer'></div>
+<p>WH/BH는 Q3의 &quot;가장 윗쪽(=y=512부터)&quot;에 배치한다.</p>
+<div class='spacer'></div>
+<p>기본값:</p>
+<ul>
+<li>WH: N_WH_TILES_Y = 8 tiles  → 8*16 = 128 px 높이</li>
+<li>BH: N_BH_TILES_Y = 4 tiles  → 4*16 = 64 px 높이</li>
+</ul>
+<div class='spacer'></div>
+<p>좌표 정의:</p>
+<ul>
+<li>WH origin = (WH_X0, WH_Y0) = (512, 512)</li>
+<li>WH size   = (512, 128)</li>
+<li>BH origin = (BH_X0, BH_Y0) = (512, 512 + 128) = (512, 640)</li>
+<li>BH size   = (512, 64)</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h3>5.4.2 WH 레코드 포맷 (2 Cells / Record)</h3>
+<div class='spacer'></div>
+<p>WH는 &quot;로그처럼&quot; 사용되며, Tick 인덱스가 곧 저장 주소가 된다.</p>
+<p>레코드는 고정 길이 2셀로 정의한다.</p>
+<div class='spacer'></div>
+<p>Record = 2 Cells (C0, C1)</p>
+<div class='spacer'></div>
+<p>채널 계약 준수:</p>
+<ul>
+<li>A: Spatial Address Layer (Where)</li>
+<li>B: Behavior Layer (What)</li>
+<li>G: State Layer (State/flags)</li>
+<li>R: Stream Layer (byte stream)</li>
+</ul>
+<div class='spacer'></div>
+<p>C0 (Header/Opcode):</p>
+<ul>
+<li>A: tick_low32 또는 event_id</li>
+<li>B: opcode_index (RuleTable index)</li>
+<li>G: state/flags</li>
+<li>R: param0 (1 byte)</li>
+</ul>
+<div class='spacer'></div>
+<p>C1 (Target/Arg):</p>
+<ul>
+<li>A: target_addr (예: gate_id/slot/cell index를 packing한 주소)</li>
+<li>B: target_kind (FS_SLOT / TILE / CELL / PROC 등)</li>
+<li>G: arg_state (짧은 길이/상태)</li>
+<li>R: param1 (1 byte)</li>
+</ul>
+<div class='spacer'></div>
+<p>큰 payload는 WH에 직접 저장하지 않고,</p>
+<p>CanvasFS key(pointer) 또는 별도 DataTile을 통해 참조한다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h3>5.4.3 Tick → WH 주소 매핑 (O(1))</h3>
+<div class='spacer'></div>
+<p>정의:</p>
+<ul>
+<li>RECORD_CELLS = 2</li>
+<li>LANE_W = 512 (Q3 width)</li>
+<li>RECS_PER_ROW = LANE_W / RECORD_CELLS = 256</li>
+<li>WH_H = 128</li>
+<li>WH_CAP = RECS_PER_ROW * WH_H = 32768 records</li>
+</ul>
+<div class='spacer'></div>
+<p>tick -&gt; index:</p>
+<ul>
+<li>idx = tick % WH_CAP</li>
+<li>row = idx / RECS_PER_ROW</li>
+<li>col = idx % RECS_PER_ROW</li>
+<li>x = WH_X0 + col * RECORD_CELLS</li>
+<li>y = WH_Y0 + row</li>
+</ul>
+<div class='spacer'></div>
+<p>WH 레코드의 첫 셀(C0)은 (x,y), 두번째 셀(C1)은 (x+1,y)</p>
+<div class='spacer'></div>
+<p>이 매핑은 결정론적이며, 동일 tick은 동일 좌표에 기록된다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h3>5.4.4 BH(BlackHole) 목적 및 매핑</h3>
+<div class='spacer'></div>
+<p>BH는 &quot;감쇠/에너지/TTL&quot; 전용 공간이다.</p>
+<div class='spacer'></div>
+<p>BH는 append가 아니라 &quot;소유자 기반 direct mapping&quot;을 사용한다.</p>
+<p>즉, pid 또는 gate_id에 대해 BH의 고정 위치가 존재한다.</p>
+<div class='spacer'></div>
+<p>기본 pid 에너지 매핑:</p>
+<ul>
+<li>pid -&gt; BH cell 좌표 (x,y)를 O(1)로 매핑</li>
+<li>해당 셀의 G 또는 A에 에너지 값을 저장 (정책으로 선택)</li>
+<li>Tick마다 감소(decay), 0이면 해당 프로세스 GateSpace를 CLOSE</li>
+</ul>
+<div class='spacer'></div>
+<p>BH는 시스템 안정성(자동 sleep/close, TTL)에 직접 연결된다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h3>5.4.5 Determinism Rule (WH/BH)</h3>
+<div class='spacer'></div>
+<p>아래가 동일하면 결과도 동일해야 한다:</p>
+<ul>
+<li>초기 Canvas</li>
+<li>동일 Branch/Page/B-page chain</li>
+<li>동일 Gate 상태</li>
+<li>동일 Scan Policy</li>
+<li>동일 tick 입력</li>
+</ul>
+<div class='spacer'></div>
+<p>WH 기록 좌표는 tick에 의해 결정되며,</p>
+<p>BH 감소는 pid/gate_id 매핑에 의해 결정된다.</p>
+<div class='spacer'></div>
+<h2>6. CanvasFS Integration</h2>
+<div class='spacer'></div>
+<h3>6.1 Volume Model</h3>
+<ul>
+<li>**VOLH** (Volume Header Tile)</li>
+<li>**VOLT** (256 Slot Tile, 헤더 0개)</li>
+</ul>
+<div class='spacer'></div>
+<p><code>VOLH(0,1).A = volt_gate_id</code></p>
+<div class='spacer'></div>
+<h3>6.2 Slot Contract</h3>
+<ul>
+<li>`slot.A low16  = head_dat_gate`</li>
+<li>`slot.A high16 = meta_gate`</li>
+</ul>
+<div class='spacer'></div>
+<ul>
+<li>`slot.B = slot class / type`</li>
+<li>`slot.G = state/length`</li>
+<li>`slot.R = flags`</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>7. Reserved Regions</h2>
+<div class='spacer'></div>
+<p>Control Region:</p>
+<ul>
+<li>tile_x 32..35</li>
+<li>tile_y 32..35</li>
+<li>gate_id 2080..2275</li>
+</ul>
+<div class='spacer'></div>
+<p>FreeMap 초기화 시 반드시 reserved 처리한다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>8. Determinism Requirement</h2>
+<div class='spacer'></div>
+<p>다음 조건이 동일하면 결과도 동일해야 한다:</p>
+<ul>
+<li>초기 Canvas</li>
+<li>동일 Branch</li>
+<li>동일 Page</li>
+<li>동일 Gate 상태</li>
+<li>동일 B-page chain</li>
+<li>동일 Scan Policy</li>
+</ul>
+<div class='spacer'></div>
+<p>이 조건은 테스트로 검증한다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>9. Engine Module Separation</h2>
+<div class='spacer'></div>
+<p>Core는 다음만 담당한다:</p>
+<ul>
+<li>Scan</li>
+<li>Gate filtering</li>
+<li>Interpretation</li>
+<li>Commit</li>
+<li>Replay</li>
+</ul>
+<div class='spacer'></div>
+<p>Policy는 다음을 담당한다:</p>
+<ul>
+<li>Scan Mode (Ring / Spiral)</li>
+<li>Page Selection</li>
+<li>B-page selection</li>
+</ul>
+<div class='spacer'></div>
+<p>FS는 Core 위에서 동작한다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>10. Design Goals</h2>
+<ul>
+<li>Copy-free branching</li>
+<li>Spatial determinism</li>
+<li>Gate-based protection</li>
+<li>Reversible interpretation</li>
+<li>GPU-friendly tile parallelism</li>
+<li>Time-as-space debugging</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>11. Determinism Lock + WH Overflow (Phase 4.1)</h2>
+<div class='spacer'></div>
+<h3>11.1 CVP Lock Fields</h3>
+<div class='spacer'></div>
+<p>CVP는 아래 값이 동일할 때만 load/replay를 허용한다:</p>
+<div class='spacer'></div>
+<ul>
+<li>`scan_policy`</li>
+<li>`bpage_version`</li>
+<li>`contract_hash` (ABGR contract signature)</li>
+<li>`wh_cap` (compiled WH_CAP)</li>
+</ul>
+<div class='spacer'></div>
+<p>다르면 <code>CVP_ERR_LOCK</code>.</p>
+<div class='spacer'></div>
+<h3>11.2 WH Overflow Policy (Fixed)</h3>
+<div class='spacer'></div>
+<p>WH는 **원형 버퍼(mod WH_CAP)**로 고정한다.</p>
+<div class='spacer'></div>
+<p>따라서 replay 가능한 범위는:</p>
+<div class='spacer'></div>
+<p><code>[save_tick - min(save_tick, WH_CAP), save_tick]</code></p>
+<div class='spacer'></div>
+<p>범위를 벗어나는 요청은 자동 clamp된다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<p>End of Specification v1.0</p>
+<div class='spacer'></div>
+<h1>Appendix: DevDictionary (Search-first Documentation)</h1>
+<div class='spacer'></div>
+<ul>
+<li>Canonical opcode/region/binding definitions live in `include/*.def` (SSOT).</li>
+<li>Generate search index JSON with `python3 tools/gen_devdict.py`.</li>
+<li>The DevDictionary UI is behavior-first: search a concept/opcode/name -&gt; list pixel/tile/gate locations.</li>
+</ul>
+<div class='spacer'></div>
+<div class='spacer'></div>
+</main>
+</body>
+</html>

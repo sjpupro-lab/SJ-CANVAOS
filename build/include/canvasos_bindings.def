@@ -1,0 +1,13 @@
+/* CanvasOS Bindings SSOT (Behavior → Locations)
+ * Fields: SYMBOL, TARGET_KIND, TARGET_NAME, NOTE
+ */
+BIND(OP_GATE,   REGION, WH,          "Gate open/close events written as WH_GATE_OPEN/CLOSE records")
+BIND(OP_GATE,   REGION, CONTROL,     "Gate ops respect reserved control tiles (FreeMap protection)")
+BIND(OP_TIME,   REGION, WH,          "Time/tick ops write into WH circular area")
+BIND(OP_TIME,   REGION, BH,          "Energy/TTL decay uses BH pid→cell mapping")
+BIND(OP_IPC,    REGION, WH,          "IPC send records written as WH_IPC_SEND (0x30) at sc->tick")
+BIND(OP_CVP,    REGION, CVP_HEADER,  "CVP save/load/validate/replay enforces lock fields in header")
+BIND(OP_CVP,    REGION, CVP_SECTIONS,"CVP save serializes CANVAS_BASE, GATE_STATE, WH_LANE, BH_STATE")
+BIND(OP_CVP,    REGION, WH,          "CVP replay re-executes WH_LANE records via wh_exec_min()")
+BIND(OP_CVP,    REGION, BH,          "CVP BH_STATE section captures/restores pid energy")
+BIND(OP_ENGINE, REGION, WH,          "engctx_tick writes WH_OP_TICK heartbeat; engctx_replay reads WH")
