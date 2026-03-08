@@ -1,0 +1,62 @@
+[
+  {
+    "symbol": "OP_GATE",
+    "target_kind": "REGION",
+    "target": "WH",
+    "note": "Gate open/close events written as WH_GATE_OPEN/CLOSE records"
+  },
+  {
+    "symbol": "OP_GATE",
+    "target_kind": "REGION",
+    "target": "CONTROL",
+    "note": "Gate ops respect reserved control tiles (FreeMap protection)"
+  },
+  {
+    "symbol": "OP_TIME",
+    "target_kind": "REGION",
+    "target": "WH",
+    "note": "Time/tick ops write into WH circular area"
+  },
+  {
+    "symbol": "OP_TIME",
+    "target_kind": "REGION",
+    "target": "BH",
+    "note": "Energy/TTL decay uses BH pid→cell mapping"
+  },
+  {
+    "symbol": "OP_IPC",
+    "target_kind": "REGION",
+    "target": "WH",
+    "note": "IPC send records written as WH_IPC_SEND (0x30) at sc->tick"
+  },
+  {
+    "symbol": "OP_CVP",
+    "target_kind": "REGION",
+    "target": "CVP_HEADER",
+    "note": "CVP save/load/validate/replay enforces lock fields in header"
+  },
+  {
+    "symbol": "OP_CVP",
+    "target_kind": "REGION",
+    "target": "CVP_SECTIONS",
+    "note": "CVP save serializes CANVAS_BASE, GATE_STATE, WH_LANE, BH_STATE"
+  },
+  {
+    "symbol": "OP_CVP",
+    "target_kind": "REGION",
+    "target": "WH",
+    "note": "CVP replay re-executes WH_LANE records via wh_exec_min()"
+  },
+  {
+    "symbol": "OP_CVP",
+    "target_kind": "REGION",
+    "target": "BH",
+    "note": "CVP BH_STATE section captures/restores pid energy"
+  },
+  {
+    "symbol": "OP_ENGINE",
+    "target_kind": "REGION",
+    "target": "WH",
+    "note": "engctx_tick writes WH_OP_TICK heartbeat; engctx_replay reads WH"
+  }
+]

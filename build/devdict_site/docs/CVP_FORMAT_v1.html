@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CVP_FORMAT_v1 - SJ CANVAS OS Docs</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+main{padding:20px; max-width: 980px; margin: 0 auto;}
+pre.code{background:#0b0d10; border:1px solid #2a2f36; padding:12px; border-radius:10px; overflow:auto;}
+code{background:#0b0d10; border:1px solid #2a2f36; padding:2px 6px; border-radius:6px;}
+.spacer{height:10px;}
+</style>
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="../index.html">← 사전으로</a></div>
+  <h1>CVP_FORMAT_v1</h1>
+  <h1>CVP Format v1.1</h1>
+<div class='spacer'></div>
+<p>CanvasOS의 **결정론(Determinism) 고정 + 복원(Replay)** 용 캡슐 포맷.</p>
+<div class='spacer'></div>
+<p>핵심:</p>
+<div class='spacer'></div>
+<ul>
+<li>**Always-ON** 캔버스 스냅샷 + WH 기반 재실행</li>
+<li>**Lock**: ScanPolicy / B-page version / ABGR contract hash가 다르면 로드 실패</li>
+<li>**WH overflow**: WH는 원형 버퍼(모듈로 WH_CAP). 저장 시점 기준 유지 구간만 replay 가능</li>
+</ul>
+<div class='spacer'></div>
+<h2>1. Header (CvpHeader)</h2>
+<div class='spacer'></div>
+<p>리틀엔디안.</p>
+<div class='spacer'></div>
+<p>| Field | Type | Meaning |</p>
+<p>|---|---:|---|</p>
+<p>| magic | u32 | <code>CVP1</code> |</p>
+<p>| version | u32 | <code>0x00010001</code> |</p>
+<p>| engine_major/minor | u32 | 엔진 버전 |</p>
+<p>| scan_policy | u32 | <code>SCAN_RING_N4=1</code>, <code>SCAN_SPIRAL=2</code> |</p>
+<p>| bpage_version | u32 | RuleTable/SSOT 버전(또는 hash) |</p>
+<p>| contract_hash | u32 | ABGR 계약 signature |</p>
+<p>| wh_cap | u32 | 컴파일된 WH_CAP 고정 |</p>
+<p>| save_tick | u32 | 저장 시점 tick |</p>
+<p>| flags | u32 | 예약 |</p>
+<p>| header_crc | u32 | header_crc 제외 0..(N-1) CRC32 |</p>
+<div class='spacer'></div>
+<h2>2. TLV Sections</h2>
+<div class='spacer'></div>
+<p>반복 구조:</p>
+<div class='spacer'></div>
+<pre class="code"><code class="lang-">
+[type:u16][len:u32][crc:u32][data...]
+</code></pre>
+<div class='spacer'></div>
+<ul>
+<li>`crc`는 `data`에 대한 CRC32</li>
+</ul>
+<div class='spacer'></div>
+<h3>Section Types</h3>
+<div class='spacer'></div>
+<p>| type | name | payload |</p>
+<p>|---:|---|---|</p>
+<p>| 1 | CANVAS_BASE | 전체 Cell dump (<code>sizeof(Cell) * W*H</code>) |</p>
+<p>| 2 | GATE_STATE | Tile gate state array (<code>TILEGATE_COUNT</code>) |</p>
+<p>| 3 | WH_LANE | WH 영역 Cell dump (검증/툴링용, CANVAS_BASE와 중복) |</p>
+<p>| 4 | BH_STATE | BH 영역 Cell dump (검증/툴링용, CANVAS_BASE와 중복) |</p>
+<div class='spacer'></div>
+<h2>3. Replay</h2>
+<div class='spacer'></div>
+<ul>
+<li>Replay의 유일 입력은 **WH 레코드(2-cell)**.</li>
+<li>WH는 원형 버퍼이므로 replay 가능한 범위는:</li>
+</ul>
+<div class='spacer'></div>
+<pre class="code"><code class="lang-">
+[save_tick - min(save_tick, WH_CAP), save_tick]
+</code></pre>
+<div class='spacer'></div>
+<p>이 범위를 벗어나면 from_tick은 자동으로 clamp된다.</p>
+<div class='spacer'></div>
+</main>
+</body>
+</html>

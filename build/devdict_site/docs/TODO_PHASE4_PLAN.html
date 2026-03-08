@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TODO_PHASE4_PLAN - SJ CANVAS OS Docs</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+main{padding:20px; max-width: 980px; margin: 0 auto;}
+pre.code{background:#0b0d10; border:1px solid #2a2f36; padding:12px; border-radius:10px; overflow:auto;}
+code{background:#0b0d10; border:1px solid #2a2f36; padding:2px 6px; border-radius:6px;}
+.spacer{height:10px;}
+</style>
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="../index.html">← 사전으로</a></div>
+  <h1>TODO_PHASE4_PLAN</h1>
+  <h1>Phase 4 Plan — CVP I/O + TimeMachine Replay (Draft)</h1>
+<div class='spacer'></div>
+<p>&gt; 목표: **Canvas 하나(.cvp)**만으로 부팅/저장/복원이 가능한 최소 OS 흐름을 만든다.  </p>
+<p>&gt; Phase 3(스케줄러, CanvasFS, Gate, WH/BH) 위에 얹는다.</p>
+<div class='spacer'></div>
+<h2>4.0 범위 고정</h2>
+<ul>
+<li>Canvas = 1024×1024 고정</li>
+<li>스캔 = Ring N4 기본 (정책 교체 가능)</li>
+<li>ABGR 채널 계약 유지 (A=주소, B=동작 인덱스, G=상태, R=스트림)</li>
+<li>Always-ON, 신호는 CLOSE/OPEN</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>4.1 CVP 포맷 v1 (파일 1개로 끝내기)</h2>
+<div class='spacer'></div>
+<h3>4.1.1 컨테이너 레이아웃</h3>
+<ul>
+<li>Header (고정 4KB)</li>
+<li>magic, version, endian, flags</li>
+<li>canvas_w/h (=1024/1024)</li>
+<li>root_page_id, root_bpage_chain</li>
+<li>reserved region map(최소)</li>
+<li>Sections (TLV)</li>
+<li>CANVAS_BASE: 초기 캔버스(또는 sparse)</li>
+<li>WH_LANE: WhiteHole 기록 구간(선택)</li>
+<li>BH_STATE: BlackHole 상태(선택)</li>
+<li>FS_VOLUME: CanvasFS 볼륨들(선택)</li>
+<li>RULETABLE: RuleTable dump(선택)</li>
+</ul>
+<div class='spacer'></div>
+<h3>4.1.2 직렬화 정책</h3>
+<ul>
+<li>v1 최소 구현은 **RAW 덤프 + CRC32**로 시작</li>
+<li>다음 단계에서 sparse(변경 셀만)로 전환</li>
+<li>Gate 상태는 bitmap(4096bit)로 저장</li>
+</ul>
+<div class='spacer'></div>
+<h3>4.1.3 API</h3>
+<ul>
+<li>cvp_save(path, EngineContext*)</li>
+<li>cvp_load(path, EngineContext*)</li>
+<li>cvp_validate(path) → magic/version/crc</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>4.2 TimeMachine Replay (진짜 “시간여행”)</h2>
+<div class='spacer'></div>
+<h3>4.2.1 리플레이 원칙</h3>
+<ul>
+<li>“로그”를 별도로 쌓지 않는다.</li>
+<li>WH 레코드 자체가 리플레이 소스다.</li>
+<li>같은 TimeSlice(page/bpage/gate/scan)면 결과 동일해야 함.</li>
+</ul>
+<div class='spacer'></div>
+<h3>4.2.2 리플레이 API</h3>
+<ul>
+<li>engctx_replay(ctx, from_tick, to_tick)</li>
+<li>wh_exec_record(ctx, record) 기반으로 side-effect 재현</li>
+<li>Phase 4에서 **WH opcode set 확장**:</li>
+<li>FS write pointer update</li>
+<li>gate open/close (완료)</li>
+<li>process state transition (sleep/wake/kill)</li>
+<li>commit Δ write</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>4.3 RuleTable v1 고정 (B-page Engine)</h2>
+<div class='spacer'></div>
+<h3>4.3.1 최소 엔트리</h3>
+<ul>
+<li>EXEC_NOP</li>
+<li>EXEC_GATE (tile open/close)</li>
+<li>EXEC_FS (tiny/small payload write)</li>
+<li>EXEC_COMMIT (Δ-Commit)</li>
+</ul>
+<div class='spacer'></div>
+<h3>4.3.2 어댑터 체인(Format Stack)</h3>
+<ul>
+<li>bpage_chain을 통해 “포맷2포맷” 해석 스택 연결</li>
+<li>Canvas간 통신(Phase5) 전에 로컬에서 먼저 검증</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>4.4 테스트 (필수)</h2>
+<ul>
+<li>Determinism 테스트:</li>
+<li>같은 CVP → 같은 tick 범위 실행 → 캔버스 해시 동일</li>
+<li>Replay 테스트:</li>
+<li>tick 0..N 실행 후 저장</li>
+<li>tick 0..N을 WH 리플레이로 재생성</li>
+<li>결과 동일</li>
+<li>Gate 보호 테스트:</li>
+<li>reserved region은 어떤 경우에도 open/overwrite 금지(FreeMap 포함)</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>4.5 산출물</h2>
+<ul>
+<li>docs/CVP_FORMAT_v1.md</li>
+<li>src/cvp_io.c 실제 구현(현재 stub 대체)</li>
+<li>tests/test_cvp.c 신규 추가</li>
+<li>docs/ENGINE_CANVASOS_v1.md 업데이트(Phase4 항목)</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<p>끝.</p>
+<div class='spacer'></div>
+<div class='spacer'></div>
+<h2>Phase 4 Add-on: DevDictionary Web (Behavior-first Search)</h2>
+<div class='spacer'></div>
+<ul>
+<li>SSOT: include/canvasos_opcodes.def, canvasos_regions.def, canvasos_bindings.def</li>
+<li>Generator: tools/gen_devdict.py -&gt; devdict_site/data/*.json</li>
+<li>UI goal: search by legacy dev keywords (GateSpace, sched_tick, VOLH/VOLT, WhiteHole/BlackHole)</li>
+<li>Primary: behavior -&gt; locations list (pixel boxes + gate ranges)</li>
+<li>Secondary: location lookup (x,y or gate_id) -&gt; region + linked behaviors</li>
+<li>Deploy: GitHub Pages (static)</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h1>✅ 반영된 사항 (현재 구현 상태)</h1>
+<div class='spacer'></div>
+<h2>Determinism Lock</h2>
+<ul>
+<li>CVP header에 **scan_policy / bpage_version / contract_hash / wh_cap / save_tick** 고정</li>
+<li>lock mismatch 시 load/validate 실패</li>
+</ul>
+<div class='spacer'></div>
+<h2>WH Overflow Policy</h2>
+<ul>
+<li>WH는 **원형 버퍼(mod WH_CAP)**로 고정</li>
+<li>replay는 **save_tick 기준 retained window**에서만 유효</li>
+</ul>
+<div class='spacer'></div>
+<h2>Phase 5: IPC (WH relay)</h2>
+<ul>
+<li>IPC send/recv를 WH opcode(0x30)로 기록</li>
+<li>proc.ipc_cursor로 **결정론적 consume**</li>
+</ul>
+<div class='spacer'></div>
+<h2>Phase 5 다음 TODO</h2>
+<ul>
+<li>IPC record packing 확장: full 32-bit src/dst pid + payload key 분리</li>
+<li>Multi-canvas routing: dst_canvas &gt;255, adapter chain 기반 해석</li>
+</ul>
+<div class='spacer'></div>
+</main>
+</body>
+</html>

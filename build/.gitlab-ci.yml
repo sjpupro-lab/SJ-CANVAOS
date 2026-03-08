@@ -1,0 +1,48 @@
+stages:
+  - test
+  - build
+  - package
+
+test:
+  stage: test
+  image: ubuntu:22.04
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential python3
+  script:
+    - chmod +x scripts/run_tests.sh || true
+    - ./scripts/run_tests.sh
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - test-results/
+  allow_failure: false
+
+build_dist:
+  stage: build
+  image: ubuntu:22.04
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential python3 zip
+  script:
+    - chmod +x scripts/build_dist.sh || true
+    - ./scripts/build_dist.sh
+  artifacts:
+    expire_in: 14 days
+    paths:
+      - dist/
+
+package_release:
+  stage: package
+  image: ubuntu:22.04
+  needs: ["build_dist"]
+  before_script:
+    - apt-get update
+    - apt-get install -y zip
+  script:
+    - cd dist && zip -r ../dist_artifact.zip .
+  artifacts:
+    expire_in: 30 days
+    paths:
+      - dist_artifact.zip

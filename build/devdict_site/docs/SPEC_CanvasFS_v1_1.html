@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SPEC_CanvasFS_v1_1 - SJ CANVAS OS Docs</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+main{padding:20px; max-width: 980px; margin: 0 auto;}
+pre.code{background:#0b0d10; border:1px solid #2a2f36; padding:12px; border-radius:10px; overflow:auto;}
+code{background:#0b0d10; border:1px solid #2a2f36; padding:2px 6px; border-radius:6px;}
+.spacer{height:10px;}
+</style>
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="../index.html">← 사전으로</a></div>
+  <h1>SPEC_CanvasFS_v1_1</h1>
+  <h1>CanvasFS v1.1 Specification (VolumeTile + Slot Table + DataTile)</h1>
+<div class='spacer'></div>
+<p>Status: Draft</p>
+<div class='spacer'></div>
+<p>Depends on:</p>
+<ul>
+<li>`SPEC_ControlRegion_Page_Bpage_v1`</li>
+<li>`SPEC_CanvasOS_QuadBoot_v1`</li>
+</ul>
+<div class='spacer'></div>
+<p>Default engine:</p>
+<ul>
+<li>Scan: `RING_WAVEFRONT`</li>
+<li>Neighbor: `N4`</li>
+<li>Exec: `Gate → ActiveSet → Δ-Commit`</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>1. 목표</h2>
+<div class='spacer'></div>
+<p>CanvasFS v1.1은 &quot;타일 1개=파일&quot; 모델을 버리고, **타일 1개=슬롯 테이블(VolumeTile)**로 고정한다.</p>
+<div class='spacer'></div>
+<ul>
+<li>VolumeTile 1개는 16×16=256 슬롯을 가진다.</li>
+<li>슬롯은 &quot;가장 작은 클래스&quot;부터 자동 선택한다.</li>
+<li>실제 데이터는 DataTile로 분리 저장하며, 필요시 체인으로 무제한 확장한다.</li>
+<li>브랜치/멀티버스는 Canvas 복사가 아니라 PageSelector(가시성) 변경이다.</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>2. 단위 정의</h2>
+<div class='spacer'></div>
+<h3>2.1 Tile</h3>
+<ul>
+<li>Tile = 16×16 Cell</li>
+<li>전체 타일 수 = 64×64 = 4096</li>
+<li>`gate_id`는 Tile ID(0..4095)</li>
+</ul>
+<div class='spacer'></div>
+<h3>2.2 FileKey</h3>
+<div class='spacer'></div>
+<pre class="code"><code class="lang-">
+FsKey = (volume_gate_id, slot)
+volume_gate_id: 0..4095
+slot: 0..255
+</code></pre>
+<div class='spacer'></div>
+<p>**이론상 최대 슬롯 수**</p>
+<ul>
+<li>4096 × 256 = 1,048,576</li>
+</ul>
+<div class='spacer'></div>
+<p>이 값은 &quot;파일 엔트리 슬롯&quot;의 수이며, 실제 저장 데이터 용량과 동일하지 않다.</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>3. VolumeTile</h2>
+<div class='spacer'></div>
+<p>VolumeTile은 슬롯 테이블이다.</p>
+<div class='spacer'></div>
+<h3>3.1 Magic</h3>
+<p>VolumeTile의 (row0,col0) cell에 다음 값을 저장한다:</p>
+<ul>
+<li>B=&#x27;V&#x27;, G=&#x27;O&#x27;, R=&#x27;L&#x27;, pad=&#x27;1&#x27;</li>
+</ul>
+<div class='spacer'></div>
+<h3>3.2 Slot Cell Schema</h3>
+<p>VolumeTile 내의 각 Cell이 곧 &quot;슬롯 1개&quot;이다.</p>
+<div class='spacer'></div>
+<ul>
+<li>B: slot class</li>
+<li>G: length</li>
+<li>R: flags</li>
+<li>A: payload(TINY) 또는 head data_tile gate_id</li>
+</ul>
+<div class='spacer'></div>
+<p>Slot class:</p>
+<ul>
+<li>`FREE(0)`  : 비어있음</li>
+<li>`TINY(1)`  : 0..4 bytes를 A(u32)에 inline 저장</li>
+<li>`SMALL(2)` : 5..224 bytes를 DataTile 1개에 저장</li>
+<li>`LARGE(3)` : 225..∞ bytes를 DataTile 체인으로 저장</li>
+</ul>
+<div class='spacer'></div>
+<p>Length:</p>
+<ul>
+<li>TINY/SMALL: 정확한 길이(0..224)</li>
+<li>LARGE: v1.1에서는 `0xFF`로 마크, 실제 길이는 v1.2 Meta에 저장</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>4. DataTile</h2>
+<div class='spacer'></div>
+<p>DataTile은 실제 페이로드 타일이다.</p>
+<div class='spacer'></div>
+<h3>4.1 Magic</h3>
+<p>DataTile의 (row0,col0) cell:</p>
+<ul>
+<li>B=&#x27;D&#x27;, G=&#x27;A&#x27;, R=&#x27;T&#x27;, pad=&#x27;1&#x27;</li>
+</ul>
+<div class='spacer'></div>
+<h3>4.2 Next pointer</h3>
+<p>DataTile의 (row0,col1) cell:</p>
+<ul>
+<li>A(u32)의 하위 16비트에 next_gate_id 저장</li>
+<li>next_gate_id=0이면 체인 종료</li>
+</ul>
+<div class='spacer'></div>
+<h3>4.3 Payload Layout</h3>
+<ul>
+<li>payload rows = row2..row15</li>
+<li>payload cells = 14×16=224</li>
+<li>v1.1 저장: R 채널 1 byte per cell</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>5. 동작 규칙</h2>
+<div class='spacer'></div>
+<h3>5.1 Write</h3>
+<p>입력 길이 len에 따라 자동 선택:</p>
+<ul>
+<li>len&lt;=4  → TINY</li>
+<li>5..224  → SMALL (DataTile 1개)</li>
+<li>&gt;224    → LARGE (DataTile 체인)</li>
+</ul>
+<div class='spacer'></div>
+<h3>5.2 Read</h3>
+<ul>
+<li>TINY: A에서 복원</li>
+<li>SMALL: head DataTile 1개 읽음</li>
+<li>LARGE: 체인을 순서대로 읽음(출력 버퍼 cap까지)</li>
+</ul>
+<div class='spacer'></div>
+<h3>5.3 Free</h3>
+<ul>
+<li>슬롯을 FREE로만 표시한다.</li>
+<li>v1.1에서는 DataTile GC는 수행하지 않는다.</li>
+</ul>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>6. v1.2 확장</h2>
+<div class='spacer'></div>
+<ul>
+<li>DirectoryBlock: `name_hash → FsKey(volume,slot)`</li>
+<li>Large length meta: LARGE의 실제 길이를 MetaTile에 저장</li>
+<li>FreeMap: DataTile 할당을 위한 비트맵/프리리스트</li>
+<li>Gate 연동: Gate CLOSED면 read/write 차단</li>
+</ul>
+<div class='spacer'></div>
+<div class='spacer'></div>
+<div class='spacer'></div>
+<h2>9. B-page (Format Adapter)</h2>
+<div class='spacer'></div>
+<p>CanvasFS의 &quot;포맷 전환&quot;은 **데이터 이동 없이** 이뤄진다.</p>
+<div class='spacer'></div>
+<ul>
+<li>VolumeTile마다 `active bpage_id`가 있다.</li>
+<li>`bpage_id`가 바뀌면, 같은 DataTile의 R 바이트열을 다른 규칙으로 decode/encode 한다.</li>
+<li>즉, **B-page 교체 한 줄 = 포맷2포맷 Adapter**.</li>
+</ul>
+<div class='spacer'></div>
+<h3>9.1 저장 위치</h3>
+<div class='spacer'></div>
+<ul>
+<li>VolumeTile (VOL1)</li>
+<li>(row0,col1).B = bpage_id low</li>
+<li>(row0,col1).G = bpage_id high</li>
+</ul>
+<div class='spacer'></div>
+<h3>9.2 기본 제공 bpage_id (v1.2)</h3>
+<div class='spacer'></div>
+<ul>
+<li>0: IDENTITY (no-op)</li>
+<li>1: XOR8      (byte ^= key)</li>
+<li>2: NIBBLE    (swap hi/lo nibble)</li>
+<li>3: ROTL1     (encode rotl1, decode rotr1)</li>
+</ul>
+<div class='spacer'></div>
+<p><code>key</code>는 기본적으로 다음으로 결정된다:</p>
+<div class='spacer'></div>
+<ul>
+<li>`key = 0x5A ^ (bpage_id &amp; 0xFF) ^ (volume_gate_id &amp; 0xFF)`</li>
+</ul>
+<div class='spacer'></div>
+<p>(결정론적, 가역, 빠름)</p>
+<div class='spacer'></div>
+<h3>9.3 API</h3>
+<div class='spacer'></div>
+<ul>
+<li>`fs_set_bpage(fs, volume_gate_id, bpage_id)`</li>
+<li>`fs_get_bpage(fs, volume_gate_id, &amp;out_bpage_id)`</li>
+</ul>
+<div class='spacer'></div>
+<div class='spacer'></div>
+</main>
+</body>
+</html>

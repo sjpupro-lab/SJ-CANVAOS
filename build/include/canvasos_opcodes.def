@@ -1,0 +1,74 @@
+/* CanvasOS Opcode SSOT (X-macro)
+ * Fields: NAME, CODE, CLASS, TAGS, KEYWORDS, DESC
+ *
+ * Phase 3: WH/BH gate + time ops
+ * Phase 4: CVP I/O + IPC relay + engctx lifecycle
+ *
+ * WH_OP_* = TimeMachine layer (2-cell WH records).
+ * Engine core maps these via wh_exec_record() / wh_exec_min().
+ */
+
+/* ---- Phase 3: Gate ---- */
+X(WH_GATE_OPEN,  0x10, OP_GATE,
+  "gate,open,wh,space",
+  "GateSpace sched_spawn wake recharge OPEN volt volh WH_OP_GATE_OPEN gate_open_tile gate_open_space_ctx",
+  "WH opcode: open a single tile gate. C1.A=gate_id (low16), target_kind=WH_TGT_TILE.")
+
+X(WH_GATE_CLOSE, 0x11, OP_GATE,
+  "gate,close,wh,space",
+  "GateSpace sched_tick sleep CLOSE volt volh WH_OP_GATE_CLOSE gate_close_tile gate_close_space_ctx",
+  "WH opcode: close a single tile gate. C1.A=gate_id (low16), target_kind=WH_TGT_TILE.")
+
+/* ---- Phase 3: Time / Energy ---- */
+X(WH_WRITE,   0x20, OP_TIME,
+  "wh,time,commit,log",
+  "WhiteHole TimeLane tick commit log wh_write_record WH_LANE wh_cap",
+  "Write a 2-cell WH record at circular tick-indexed address (mod WH_CAP).")
+
+X(BH_DECAY,   0x21, OP_TIME,
+  "bh,energy,decay,pid",
+  "BlackHole energy TTL decay pid bh_decay_energy bh_set_energy sched_tick BH_STATE",
+  "Decay BH energy for pid; reaching 0 triggers SLEEP + gate close.")
+
+/* ---- Phase 4: IPC relay ---- */
+X(WH_IPC_SEND, 0x30, OP_IPC,
+  "ipc,wh,send,relay",
+  "IPC send recv sched_ipc_send sched_ipc_recv ipc_cursor dst_pid src_pid payload_key mount_canvas Phase5",
+  "WH IPC record. C0:A=dst_pid,G=dst_canvas,R=slot. C1:A=src_pid,G=gate_hi,R=gate_lo. Consumed via ipc_cursor scan.")
+
+/* ---- Phase 4: CVP I/O ---- */
+X(CVP_SAVE,   0x40, OP_CVP,
+  "cvp,io,save,snapshot",
+  "cvp_save_ctx EngineContext CvpHeader scan_policy bpage_version contract_hash CVP_CONTRACT_HASH_V1 CANVAS_BASE GATE_STATE WH_LANE BH_STATE",
+  "Save EngineContext to .cvp file: header locks + TLV sections + per-section CRC32.")
+
+X(CVP_LOAD,   0x41, OP_CVP,
+  "cvp,io,load,restore",
+  "cvp_load_ctx dry_run CVP_LOCK_SKIP GATE_STATE active_open sync tick restore save_tick",
+  "Load .cvp into EngineContext. Enforces lock fields (use CVP_LOCK_SKIP to skip). Restores tick, cells, gates, active_open.")
+
+X(CVP_VALIDATE, 0x42, OP_CVP,
+  "cvp,validate,crc,lock",
+  "cvp_validate magic CVP1 header_crc CRC32 lock mismatch CVP_ERR_LOCK wh_cap integrity",
+  "Check .cvp header magic/version/CRC and lock fields without loading canvas data.")
+
+X(CVP_REPLAY, 0x43, OP_CVP,
+  "cvp,replay,wh,determinism",
+  "cvp_replay_ctx WH_LANE from_tick to_tick wh_cap circular window wh_exec_min gate determinism TimeMachine",
+  "Replay WH records from .cvp into ctx. Clamps to retained WH window [save_tick-WH_CAP, save_tick].")
+
+/* ---- Phase 4: EngineContext lifecycle ---- */
+X(ENGCTX_TICK,    0x50, OP_ENGINE,
+  "engctx,tick,heartbeat",
+  "engctx_tick ctx->tick WH_OP_TICK heartbeat advance engine loop",
+  "Advance engine by one tick. Writes WH_OP_TICK heartbeat record. Returns 0 or -1.")
+
+X(ENGCTX_REPLAY,  0x51, OP_ENGINE,
+  "engctx,replay,wh,sideeffect",
+  "engctx_replay from_tick to_tick wh_exec_record WH_CAP window gate open close deterministic",
+  "Re-execute WH records in tick range as side-effects (gates). Clamps to WH window.")
+
+X(ENGCTX_INSPECT, 0x52, OP_ENGINE,
+  "engctx,inspect,cell,lookup",
+  "engctx_inspect_cell x y at_tick snapshot canvas_contract ABGR",
+  "Return cell at (x,y) from current snapshot. Phase4: snapshot-only; Phase5 adds sparse diff.")

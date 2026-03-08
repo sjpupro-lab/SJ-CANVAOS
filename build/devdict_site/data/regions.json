@@ -1,0 +1,57 @@
+[
+  {
+    "name": "WH",
+    "kind": "REGION_WH",
+    "x0": 512,
+    "y0": 512,
+    "w": 512,
+    "h": 128,
+    "tags": "time,wh,log,phase3,circular",
+    "keywords": "WhiteHole TimeLane WH_LANE wh_write_record wh_read_record WH_CAP wh_cap 32768 circular overflow mod",
+    "desc": "Tick-indexed circular append area. WH_CAP=32768 records (2-cell each). Replay window=[save_tick-WH_CAP, save_tick]."
+  },
+  {
+    "name": "BH",
+    "kind": "REGION_BH",
+    "x0": 512,
+    "y0": 640,
+    "w": 512,
+    "h": 64,
+    "tags": "time,bh,energy,phase3",
+    "keywords": "BlackHole energy TTL decay pid bh_decay_energy bh_set_energy bh_get_energy BH_STATE",
+    "desc": "Decay-only stabilization. pid→cell: x=BH_X0+(pid%BH_W), y=BH_Y0+(pid/BH_W). Energy in cell.G."
+  },
+  {
+    "name": "CONTROL",
+    "kind": "REGION_CTRL",
+    "x0": 0,
+    "y0": 0,
+    "w": 0,
+    "h": 0,
+    "tags": "kernel,control,reserved,phase2",
+    "keywords": "Control Region reserved tiles gate_id 2080..2275 FreeMap FS_RESERVED_LO FS_RESERVED_HI fs_freemap_init",
+    "desc": "Reserved control tiles (tile_x 32..35, tile_y 32..35). Pre-marked in FreeMap. gate_id 2080..2275."
+  },
+  {
+    "name": "CVP_HEADER",
+    "kind": "REGION_FILE",
+    "x0": 0,
+    "y0": 0,
+    "w": 0,
+    "h": 0,
+    "tags": "cvp,header,lock,phase4",
+    "keywords": "CvpHeader magic CVP1 version scan_policy bpage_version contract_hash CVP_CONTRACT_HASH_V1 CVP_LOCK_SKIP wh_cap save_tick header_crc CRC32",
+    "desc": "CVP file header (44 bytes). Locks: scan_policy, bpage_version, contract_hash, wh_cap. CRC covers bytes 0..39."
+  },
+  {
+    "name": "CVP_SECTIONS",
+    "kind": "REGION_FILE",
+    "x0": 0,
+    "y0": 0,
+    "w": 0,
+    "h": 0,
+    "tags": "cvp,tlv,sections,phase4",
+    "keywords": "TLV CANVAS_BASE GATE_STATE WH_LANE BH_STATE SEC_CANVAS_BASE SEC_GATE_STATE SEC_WH_LANE SEC_BH_STATE type len crc payload",
+    "desc": "CVP TLV section stream. Format: [type:u16][len:u32][crc:u32][data]. 4 section types defined."
+  }
+]

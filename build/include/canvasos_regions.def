@@ -1,0 +1,28 @@
+/* CanvasOS Regions SSOT
+ * Fields: NAME, KIND, X0, Y0, W, H, TAGS, KEYWORDS, DESC
+ */
+
+R(WH, REGION_WH, 512, 512, 512, 128,
+  "time,wh,log,phase3,circular",
+  "WhiteHole TimeLane WH_LANE wh_write_record wh_read_record WH_CAP wh_cap 32768 circular overflow mod",
+  "Tick-indexed circular append area. WH_CAP=32768 records (2-cell each). Replay window=[save_tick-WH_CAP, save_tick].")
+
+R(BH, REGION_BH, 512, 640, 512, 64,
+  "time,bh,energy,phase3",
+  "BlackHole energy TTL decay pid bh_decay_energy bh_set_energy bh_get_energy BH_STATE",
+  "Decay-only stabilization. pid→cell: x=BH_X0+(pid%BH_W), y=BH_Y0+(pid/BH_W). Energy in cell.G.")
+
+R(CONTROL, REGION_CTRL, 0, 0, 0, 0,
+  "kernel,control,reserved,phase2",
+  "Control Region reserved tiles gate_id 2080..2275 FreeMap FS_RESERVED_LO FS_RESERVED_HI fs_freemap_init",
+  "Reserved control tiles (tile_x 32..35, tile_y 32..35). Pre-marked in FreeMap. gate_id 2080..2275.")
+
+R(CVP_HEADER, REGION_FILE, 0, 0, 0, 0,
+  "cvp,header,lock,phase4",
+  "CvpHeader magic CVP1 version scan_policy bpage_version contract_hash CVP_CONTRACT_HASH_V1 CVP_LOCK_SKIP wh_cap save_tick header_crc CRC32",
+  "CVP file header (44 bytes). Locks: scan_policy, bpage_version, contract_hash, wh_cap. CRC covers bytes 0..39.")
+
+R(CVP_SECTIONS, REGION_FILE, 0, 0, 0, 0,
+  "cvp,tlv,sections,phase4",
+  "TLV CANVAS_BASE GATE_STATE WH_LANE BH_STATE SEC_CANVAS_BASE SEC_GATE_STATE SEC_WH_LANE SEC_BH_STATE type len crc payload",
+  "CVP TLV section stream. Format: [type:u16][len:u32][crc:u32][data]. 4 section types defined.")

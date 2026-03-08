@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CanvasOS DevDictionary · Phase 4</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --bg:      #080a0c;
+  --bg2:     #0e1014;
+  --bg3:     #14171d;
+  --border:  #1e222a;
+  --border2: #262b35;
+  --dim:     #3a4050;
+  --muted:   #606880;
+  --text:    #bcc4d8;
+  --bright:  #dde4f4;
+  --accent:  #3ef5c0;
+  --gate:    #3ef5c0;
+  --time:    #38b4ff;
+  --ipc:     #f0a030;
+  --cvp:     #ffdd40;
+  --engine:  #a060ff;
+  --region:  #ff8040;
+  --scan:    rgba(62,245,192,0.018);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;line-height:1.65;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,var(--scan) 0px,var(--scan) 1px,transparent 1px,transparent 3px);pointer-events:none;z-index:999;}
+
+.shell{max-width:1080px;margin:0 auto;padding:0 22px 80px;}
+
+header{padding:36px 0 28px;border-bottom:1px solid var(--border);margin-bottom:28px;}
+.hd-top{display:flex;align-items:flex-end;gap:16px;margin-bottom:10px;}
+.logo{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);background:rgba(62,245,192,.06);border:1px solid rgba(62,245,192,.2);padding:3px 8px;}
+h1{font-family:'JetBrains Mono',monospace;font-size:clamp(20px,3.5vw,30px);font-weight:700;color:var(--bright);letter-spacing:-.025em;}
+.phase-badge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cvp);border:1px solid rgba(255,221,64,.2);padding:2px 7px;background:rgba(255,221,64,.05);}
+.hd-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.06em;}
+.hd-sub em{color:var(--accent);font-style:normal;}
+
+/* canvas map */
+.region-map{margin-bottom:26px;background:var(--bg2);border:1px solid var(--border);padding:14px 16px;}
+.map-title{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;margin-bottom:10px;}
+.map-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;font-family:'JetBrains Mono',monospace;font-size:9px;}
+.mbox{padding:7px 8px;border:1px solid var(--border2);cursor:default;transition:all .12s;}
+.mbox.click{cursor:pointer;}
+.mbox.click:hover{background:rgba(62,245,192,.04);border-color:var(--accent);}
+.mbox-name{font-weight:700;margin-bottom:1px;}
+.mbox-info{color:var(--dim);font-size:8.5px;}
+.wh-c .mbox-name{color:var(--time);}
+.bh-c .mbox-name{color:#ff5566;}
+.ctrl-c .mbox-name{color:var(--muted);}
+.cvp-c .mbox-name{color:var(--cvp);}
+.dim-c .mbox-name{color:var(--dim);}
+
+/* search */
+.sw{position:relative;margin-bottom:16px;}
+.spfx{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--accent);pointer-events:none;}
+#search{width:100%;background:var(--bg2);border:1px solid var(--border2);border-left:3px solid var(--accent);color:var(--bright);font-family:'JetBrains Mono',monospace;font-size:15px;padding:13px 14px 13px 38px;outline:none;transition:box-shadow .14s,border-color .14s;}
+#search:focus{border-color:var(--accent);box-shadow:0 0 0 1px rgba(62,245,192,.15),0 0 18px rgba(62,245,192,.05);}
+#search::placeholder{color:var(--dim);}
+
+/* filters */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;align-items:center;}
+.flabel{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-right:2px;}
+.chip{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .11s;}
+.chip:hover{border-color:var(--accent);color:var(--accent);}
+.chip.active{background:rgba(62,245,192,.08);border-color:var(--accent);color:var(--accent);}
+.chip[data-f="OP_GATE"].active{background:rgba(62,245,192,.08);border-color:var(--gate);color:var(--gate);}
+.chip[data-f="OP_TIME"].active{background:rgba(56,180,255,.08);border-color:var(--time);color:var(--time);}
+.chip[data-f="OP_IPC"].active{background:rgba(240,160,48,.08);border-color:var(--ipc);color:var(--ipc);}
+.chip[data-f="OP_CVP"].active{background:rgba(255,221,64,.08);border-color:var(--cvp);color:var(--cvp);}
+.chip[data-f="OP_ENGINE"].active{background:rgba(160,96,255,.08);border-color:var(--engine);color:var(--engine);}
+.chip[data-f="region"].active{background:rgba(255,128,64,.08);border-color:var(--region);color:var(--region);}
+
+.meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:14px;}
+.meta .hi{color:var(--accent);}
+
+#results{display:flex;flex-direction:column;gap:2px;}
+
+/* cards */
+.card{background:var(--bg2);border:1px solid var(--border);border-left:3px solid transparent;animation:fi .14s ease-out both;}
+@keyframes fi{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.card:hover{background:var(--bg3);}
+.card.cl-OP_GATE{border-left-color:var(--gate);}
+.card.cl-OP_TIME{border-left-color:var(--time);}
+.card.cl-OP_IPC{border-left-color:var(--ipc);}
+.card.cl-OP_CVP{border-left-color:var(--cvp);}
+.card.cl-OP_ENGINE{border-left-color:var(--engine);}
+.card.cl-region{border-left-color:var(--region);}
+.card-head{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;user-select:none;}
+.ckey{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;color:var(--bright);flex:1;}
+.badge{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:1px 6px;border:1px solid var(--border2);}
+.b-OP_GATE{color:var(--gate);border-color:rgba(62,245,192,.25);background:rgba(62,245,192,.05);}
+.b-OP_TIME{color:var(--time);border-color:rgba(56,180,255,.25);background:rgba(56,180,255,.05);}
+.b-OP_IPC{color:var(--ipc);border-color:rgba(240,160,48,.25);background:rgba(240,160,48,.05);}
+.b-OP_CVP{color:var(--cvp);border-color:rgba(255,221,64,.25);background:rgba(255,221,64,.05);}
+.b-OP_ENGINE{color:var(--engine);border-color:rgba(160,96,255,.25);background:rgba(160,96,255,.05);}
+.b-region{color:var(--region);border-color:rgba(255,128,64,.25);background:rgba(255,128,64,.05);}
+.hex{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);}
+.chev{color:var(--dim);font-size:10px;transition:transform .13s;font-family:monospace;}
+.card.open .chev{transform:rotate(90deg);}
+.card-body{display:none;padding:0 14px 13px;border-top:1px solid var(--border);}
+.card.open .card-body{display:block;}
+.desc{color:var(--text);margin:10px 0 12px;line-height:1.75;font-size:13px;}
+.drow{display:grid;grid-template-columns:80px 1fr;gap:3px 10px;margin-bottom:4px;align-items:start;}
+.dk{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;padding-top:2px;}
+.dv{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);line-height:1.9;}
+.kw{display:inline-block;background:var(--bg3);border:1px solid var(--border2);padding:0px 5px;margin:1px 2px;color:var(--accent);font-size:9.5px;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:border-color .1s,background .1s;}
+.kw:hover{border-color:var(--accent);background:rgba(62,245,192,.06);}
+.pbox{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--bg3);border:1px solid var(--border2);padding:3px 9px;margin-top:3px;}
+.pbox .coord{color:var(--region);}
+.grange{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gate);background:rgba(62,245,192,.03);border:1px solid rgba(62,245,192,.12);padding:2px 9px;margin-top:3px;display:inline-block;}
+.bind-list{display:flex;flex-direction:column;gap:3px;margin-top:5px;}
+.bi{display:flex;align-items:flex-start;gap:7px;font-family:'JetBrains Mono',monospace;font-size:9.5px;}
+.barr{color:var(--accent);flex-shrink:0;}
+.btgt{color:var(--region);font-weight:700;flex-shrink:0;min-width:90px;}
+.bnote{color:var(--dim);}
+.fix-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8px;background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.2);color:#ff6060;padding:1px 6px;margin-left:6px;}
+.empty{padding:44px 0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);}
+.empty em{color:var(--accent);font-style:normal;}
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);letter-spacing:.07em;display:flex;justify-content:space-between;}
+footer em{color:var(--accent);font-style:normal;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header>
+  <div class="hd-top">
+    <span class="logo">SJCANVOS</span>
+    <h1>DevDictionary</h1>
+    <span class="phase-badge">Phase 4</span>
+  </div>
+  <div class="hd-sub">
+    Behavior-first SSOT &nbsp;·&nbsp;
+    <em>opcodes.def</em> <em>regions.def</em> <em>bindings.def</em>
+    &nbsp;·&nbsp; 12 opcodes · 5 regions
+    &nbsp;·&nbsp; BUG-1..5 fixed
+  </div>
+</header>
+
+<!-- region map -->
+<div class="region-map">
+  <div class="map-title">Canvas 1024×1024 — Region Map (클릭으로 검색)</div>
+  <div class="map-grid" id="map"></div>
+</div>
+
+<!-- search -->
+<div class="sw">
+  <span class="spfx">›</span>
+  <input id="search" type="text" autocomplete="off" spellcheck="false"
+    placeholder="동작·함수·슬랭 검색 — cvp_replay_ctx, ipc_cursor, CVP_LOCK_SKIP, engctx_tick …">
+</div>
+
+<!-- filters -->
+<div class="filters">
+  <span class="flabel">filter</span>
+  <button class="chip active" data-f="ALL">ALL</button>
+  <button class="chip" data-f="OP_GATE">GATE</button>
+  <button class="chip" data-f="OP_TIME">TIME</button>
+  <button class="chip" data-f="OP_IPC">IPC</button>
+  <button class="chip" data-f="OP_CVP">CVP</button>
+  <button class="chip" data-f="OP_ENGINE">ENGINE</button>
+  <button class="chip" data-f="region">REGION</button>
+</div>
+
+<div class="meta" id="meta"></div>
+<div id="results"></div>
+
+<footer>
+  <span><em>CanvasOS</em> DevDictionary — SSOT driven</span>
+  <span>Phase 4 complete · <em>0 warnings</em> · 17 tests PASS</span>
+</footer>
+</div>
+
+<script>
+const INDEX=[
+{"kind":"opcode","key":"WH_GATE_OPEN","code":16,"class":"OP_GATE","tags":"gate,open,wh,space","keywords":"GateSpace sched_spawn wake recharge OPEN volt volh WH_OP_GATE_OPEN gate_open_tile gate_open_space_ctx","desc":"WH opcode: open a single tile gate. C1.A=gate_id (low16), target_kind=WH_TGT_TILE."},
+{"kind":"opcode","key":"WH_GATE_CLOSE","code":17,"class":"OP_GATE","tags":"gate,close,wh,space","keywords":"GateSpace sched_tick sleep CLOSE volt volh WH_OP_GATE_CLOSE gate_close_tile gate_close_space_ctx","desc":"WH opcode: close a single tile gate. C1.A=gate_id (low16), target_kind=WH_TGT_TILE."},
+{"kind":"opcode","key":"WH_WRITE","code":32,"class":"OP_TIME","tags":"wh,time,commit,log","keywords":"WhiteHole TimeLane tick commit log wh_write_record WH_LANE wh_cap","desc":"Write a 2-cell WH record at circular tick-indexed address (mod WH_CAP)."},
+{"kind":"opcode","key":"BH_DECAY","code":33,"class":"OP_TIME","tags":"bh,energy,decay,pid","keywords":"BlackHole energy TTL decay pid bh_decay_energy bh_set_energy sched_tick BH_STATE","desc":"Decay BH energy for pid; reaching 0 triggers SLEEP + gate close."},
+{"kind":"opcode","key":"WH_IPC_SEND","code":48,"class":"OP_IPC","tags":"ipc,wh,send,relay","keywords":"IPC send recv sched_ipc_send sched_ipc_recv ipc_cursor dst_pid src_pid payload_key mount_canvas Phase5","desc":"WH IPC record. C0:A=dst_pid,G=dst_canvas,R=slot. C1:A=src_pid(32-bit),G=gate_hi,R=gate_lo. Consumed via ipc_cursor scan.","fix":"BUG-4,5 fix"},
+{"kind":"opcode","key":"CVP_SAVE","code":64,"class":"OP_CVP","tags":"cvp,io,save,snapshot","keywords":"cvp_save_ctx EngineContext CvpHeader scan_policy bpage_version contract_hash CVP_CONTRACT_HASH_V1 CANVAS_BASE GATE_STATE WH_LANE BH_STATE TLV CRC32","desc":"Save EngineContext to .cvp file: header locks + TLV sections + per-section CRC32. Size ~8.8MB for full 1024×1024 canvas."},
+{"kind":"opcode","key":"CVP_LOAD","code":65,"class":"OP_CVP","tags":"cvp,io,load,restore","keywords":"cvp_load_ctx dry_run CVP_LOCK_SKIP GATE_STATE active_open sync tick restore save_tick engctx_init","desc":"Load .cvp into EngineContext. Enforces lock fields (pass CVP_LOCK_SKIP=0xFFFFFFFF to skip). Restores ctx->tick, cells, gates, active_open bitmap.","fix":"BUG-1,2,3 fix"},
+{"kind":"opcode","key":"CVP_VALIDATE","code":66,"class":"OP_CVP","tags":"cvp,validate,crc,lock","keywords":"cvp_validate magic CVP1 header_crc CRC32 lock mismatch CVP_ERR_LOCK wh_cap integrity CVP_ERR_MAGIC CVP_ERR_CRC","desc":"Check .cvp header magic/version/CRC and lock fields without loading canvas data. ctx not required."},
+{"kind":"opcode","key":"CVP_REPLAY","code":67,"class":"OP_CVP","tags":"cvp,replay,wh,determinism","keywords":"cvp_replay_ctx WH_LANE from_tick to_tick wh_cap circular window wh_exec_min gate determinism TimeMachine exp_scan exp_bpage exp_hash","desc":"Replay WH records from .cvp into ctx. Enforces lock fields. Clamps to retained WH window [save_tick-WH_CAP, save_tick]. Automatically handles circular overflow.","fix":"BUG-2 fix"},
+{"kind":"opcode","key":"ENGCTX_TICK","code":80,"class":"OP_ENGINE","tags":"engctx,tick,heartbeat","keywords":"engctx_tick ctx->tick WH_OP_TICK heartbeat advance engine loop","desc":"Advance engine by one tick. Increments ctx->tick and writes WH_OP_TICK heartbeat record. Returns 0 on success."},
+{"kind":"opcode","key":"ENGCTX_REPLAY","code":81,"class":"OP_ENGINE","tags":"engctx,replay,wh,sideeffect","keywords":"engctx_replay from_tick to_tick wh_exec_record WH_CAP window gate open close deterministic side-effect","desc":"Re-execute WH records in tick range as side-effects (gate open/close). Clamps to WH window. Returns count of records replayed."},
+{"kind":"opcode","key":"ENGCTX_INSPECT","code":82,"class":"OP_ENGINE","tags":"engctx,inspect,cell,lookup","keywords":"engctx_inspect_cell x y at_tick snapshot canvas_contract ABGR Phase5 OOB bounds","desc":"Read cell at (x,y) from current snapshot. Phase4: snapshot-based. Phase5 will add sparse diff for historical at_tick. Returns -1 for OOB."},
+{"kind":"region","key":"WH","tags":"time,wh,log,phase3,circular","keywords":"WhiteHole TimeLane WH_LANE wh_write_record wh_read_record WH_CAP wh_cap 32768 circular overflow mod tick-indexed","desc":"Tick-indexed circular append area. WH_CAP=32768 records (2-cell each, 8 bytes per cell). Replay window = [save_tick-min(save_tick,WH_CAP), save_tick].","pixel_box":{"x0":512,"y0":512,"w":512,"h":128}},
+{"kind":"region","key":"BH","tags":"time,bh,energy,phase3","keywords":"BlackHole energy TTL decay pid bh_decay_energy bh_set_energy bh_get_energy BH_STATE BH_W BH_H BH_Y0","desc":"Decay-only energy stabilization. pid→cell mapping: x=BH_X0+(pid%BH_W), y=BH_Y0+(pid/BH_W). Energy stored in cell.G (u8).","pixel_box":{"x0":512,"y0":640,"w":512,"h":64}},
+{"kind":"region","key":"CONTROL","tags":"kernel,control,reserved,phase2","keywords":"Control Region reserved tiles gate_id 2080..2275 FreeMap FS_RESERVED_LO FS_RESERVED_HI fs_freemap_init tile_x tile_y","desc":"Reserved control tiles (tile_x 32..35, tile_y 32..35). Pre-marked CLOSED in FreeMap. gate_id range 2080..2275. Cannot be allocated by CanvasFS.","pixel_box":{"x0":0,"y0":0,"w":0,"h":0}},
+{"kind":"region","key":"CVP_HEADER","tags":"cvp,header,lock,phase4","keywords":"CvpHeader magic CVP1 version scan_policy bpage_version contract_hash CVP_CONTRACT_HASH_V1 CVP_LOCK_SKIP 0xFFFFFFFF wh_cap save_tick header_crc CRC32 44bytes","desc":"CVP file header (44 bytes). Lock fields: scan_policy, bpage_version, contract_hash, wh_cap. CRC32 covers bytes 0..39. CVP_LOCK_SKIP=0xFFFFFFFF to skip a field.","pixel_box":{"x0":0,"y0":0,"w":0,"h":0}},
+{"kind":"region","key":"CVP_SECTIONS","tags":"cvp,tlv,sections,phase4","keywords":"TLV CANVAS_BASE GATE_STATE WH_LANE BH_STATE SEC_CANVAS_BASE SEC_GATE_STATE SEC_WH_LANE SEC_BH_STATE type u16 len u32 crc u32 payload active_open bitmap","desc":"CVP TLV section stream after header. Format: [type:u16][len:u32][crc:u32][data]. Types: 1=CANVAS_BASE, 2=GATE_STATE, 3=WH_LANE, 4=BH_STATE. CRC per section.","pixel_box":{"x0":0,"y0":0,"w":0,"h":0}}
+];
+
+const BINDINGS=[
+  {sym:"OP_GATE",   tgt:"WH",          note:"Gate OPEN/CLOSE events written as WH records at tick"},
+  {sym:"OP_GATE",   tgt:"CONTROL",     note:"Gate ops respect reserved control tiles (FreeMap protection)"},
+  {sym:"OP_TIME",   tgt:"WH",          note:"tick+commit writes into WH circular buffer (mod WH_CAP)"},
+  {sym:"OP_TIME",   tgt:"BH",          note:"Energy decay uses BH pid→cell mapping"},
+  {sym:"OP_IPC",    tgt:"WH",          note:"WH_IPC_SEND (0x30) written at sc->tick, scanned via ipc_cursor"},
+  {sym:"OP_CVP",    tgt:"CVP_HEADER",  note:"cvp_save/load/validate enforce lock fields in header"},
+  {sym:"OP_CVP",    tgt:"CVP_SECTIONS",note:"cvp_save serializes CANVAS_BASE+GATE_STATE+WH_LANE+BH_STATE"},
+  {sym:"OP_CVP",    tgt:"WH",          note:"cvp_replay re-executes WH_LANE records via wh_exec_min()"},
+  {sym:"OP_CVP",    tgt:"BH",          note:"BH_STATE section captures/restores pid energy"},
+  {sym:"OP_ENGINE", tgt:"WH",          note:"engctx_tick writes WH_OP_TICK; engctx_replay scans WH"},
+  {sym:"WH",        tgt:"OP_CVP",      note:"WH_LANE serialized to CVP, source of deterministic replay"},
+  {sym:"BH",        tgt:"OP_TIME",     note:"BH energy decayed by BH_DECAY opcode (sched_tick)"},
+  {sym:"CVP_HEADER",tgt:"OP_CVP",      note:"Header lock mismatch → CVP_ERR_LOCK (-4)"},
+];
+
+const MAP_TILES=[
+  {n:"Q0",  i:"(0,0)→(511,511)",     c:"dim-c"},
+  {n:"Q1",  i:"(512,0)→(1023,511)",  c:"dim-c"},
+  {n:"CTRL",i:"gate 2080..2275",      c:"ctrl-c", s:"CONTROL"},
+  {n:"CVP", i:"header + TLV",         c:"cvp-c",  s:"CVP_HEADER"},
+  {n:"Q0-S",i:"(0,512)→(511,639)",   c:"dim-c"},
+  {n:"Q1-S",i:"(512,512) WH area",   c:"wh-c",   s:"WH"},
+  {n:"WH",  i:"512×128 32768 recs",  c:"wh-c",   s:"WH"},
+  {n:"BH",  i:"512×64 energy",       c:"bh-c",   s:"BH"},
+  {n:"Q3",  i:"(0,704)→(511,1023)",  c:"dim-c"},
+  {n:"Q3-E",i:"(512,704)→(1023,1023)",c:"dim-c"},
+  {n:"CVP§",i:"TLV sections",         c:"cvp-c",  s:"CVP_SECTIONS"},
+  {n:"—",   i:"",                     c:"dim-c"},
+];
+
+let activeFilter='ALL';
+let debounce;
+
+/* build map */
+(()=>{
+  const g=document.getElementById('map');
+  MAP_TILES.forEach(t=>{
+    const d=document.createElement('div');
+    d.className=`mbox ${t.c}${t.s?' click':''}`;
+    d.innerHTML=`<div class="mbox-name">${t.n}</div><div class="mbox-info">${t.i}</div>`;
+    if(t.s) d.onclick=()=>{doSearch(t.s);};
+    g.appendChild(d);
+  });
+})();
+
+function score(item,toks){
+  if(!toks.length) return 1;
+  const hay=[item.key,item.tags,item.keywords,item.desc,item.class||'',item.kind].join(' ').toLowerCase();
+  let h=0;
+  for(const t of toks) if(hay.includes(t)) h++;
+  return h/toks.length;
+}
+
+function bindsFor(sym){
+  return BINDINGS.filter(b=>b.sym===sym||b.sym===sym.replace('OP_',''));
+}
+
+function gateRange(key){
+  const r=INDEX.find(i=>i.key===key&&i.kind==='region');
+  if(!r||!r.pixel_box||r.pixel_box.w===0){
+    if(key==='CONTROL') return 'gate_id 2080..2275';
+    return '';
+  }
+  const b=r.pixel_box,T=16,TW=64;
+  const g0=Math.floor(b.y0/T)*TW+Math.floor(b.x0/T);
+  const g1=Math.floor((b.y0+b.h-1)/T)*TW+Math.floor((b.x0+b.w-1)/T);
+  return `gate_id ${g0}..${g1}`;
+}
+
+function renderCard(item,i){
+  const isOp=item.kind==='opcode';
+  const cls=item.class||'';
+  const fCls=isOp?cls:'region';
+  const badgeTxt=isOp?cls.replace('OP_',''):'REGION';
+  const bCls=isOp?`b-${cls}`:'b-region';
+  const hexStr=isOp?`<span class="hex">0x${item.code.toString(16).padStart(2,'0').toUpperCase()}</span>`:'';
+  const fixPill=item.fix?`<span class="fix-pill">${item.fix}</span>`:'';
+
+  const kws=(item.keywords||'').split(/\s+/).filter(Boolean);
+  const kwH=kws.map(k=>`<span class="kw" onclick="doSearch('${k}')">${k}</span>`).join('');
+
+  let locH='';
+  if(item.kind==='region'){
+    const b=item.pixel_box;
+    const gr=gateRange(item.key);
+    if(b&&b.w>0){
+      locH=`<div class="drow"><span class="dk">PIXEL</span><div><span class="pbox"><span class="coord">(${b.x0},${b.y0})</span><span style="color:var(--dim)">+</span><span class="coord">${b.w}×${b.h}</span></span></div></div>`;
+    }
+    if(gr) locH+=`<div class="drow"><span class="dk">GATES</span><div><span class="grange">${gr}</span></div></div>`;
+  }
+
+  const binds=isOp?bindsFor(cls):bindsFor(item.key);
+  let bindH='';
+  if(binds.length){
+    const rows=binds.map(b=>`<div class="bi"><span class="barr">→</span><span class="btgt">${b.tgt}</span><span class="bnote">${b.note}</span></div>`).join('');
+    bindH=`<div class="drow"><span class="dk">BINDS</span><div class="bind-list">${rows}</div></div>`;
+  }
+
+  return `<div class="card cl-${fCls}" id="c${i}" style="animation-delay:${Math.min(i*.028,.3)}s">
+    <div class="card-head" onclick="toggle(${i})">
+      <span class="ckey">${item.key}${fixPill}</span>
+      ${hexStr}
+      <span class="badge ${bCls}">${badgeTxt}</span>
+      <span class="chev">▶</span>
+    </div>
+    <div class="card-body">
+      <p class="desc">${item.desc}</p>
+      <div class="drow"><span class="dk">TAGS</span><span class="dv">${(item.tags||'').split(',').map(t=>`<span style="color:var(--muted)">#${t.trim()}</span>`).join(' ')}</span></div>
+      ${locH}
+      <div class="drow"><span class="dk">KEYWORDS</span><span class="dv">${kwH}</span></div>
+      ${bindH}
+    </div>
+  </div>`;
+}
+
+function render(){
+  const q=document.getElementById('search').value.trim();
+  const toks=q.toLowerCase().split(/\s+/).filter(Boolean);
+  let items=INDEX.filter(item=>{
+    if(activeFilter==='ALL') return true;
+    if(activeFilter==='region') return item.kind==='region';
+    return item.class===activeFilter;
+  });
+  if(toks.length){
+    items=items.map(x=>({x,s:score(x,toks)})).filter(o=>o.s>0).sort((a,b)=>b.s-a.s).map(o=>o.x);
+  }
+  const meta=document.getElementById('meta');
+  meta.innerHTML=toks.length
+    ?`<span class="hi">${items.length}</span> result${items.length!==1?'s':''} for "<span class="hi">${q}</span>"`
+    :`<span class="hi">${items.length}</span> entries`;
+  const out=document.getElementById('results');
+  if(!items.length){
+    out.innerHTML=`<div class="empty">검색 결과 없음: "<em>${q}</em>" — 시도: WH_CAP, CVP_LOCK_SKIP, ipc_cursor, engctx_tick</div>`;
+    return;
+  }
+  out.innerHTML=items.map((x,i)=>renderCard(x,i)).join('');
+}
+
+function toggle(i){document.getElementById('c'+i)?.classList.toggle('open');}
+function doSearch(kw){
+  document.getElementById('search').value=kw;
+  render();
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+document.querySelectorAll('.chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    activeFilter=c.dataset.f;
+    render();
+  });
+});
+
+document.getElementById('search').addEventListener('input',()=>{
+  clearTimeout(debounce);debounce=setTimeout(render,70);
+});
+document.getElementById('search').addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.target.value='';render();}
+});
+
+render();
+</script>
+</body>
+</html>

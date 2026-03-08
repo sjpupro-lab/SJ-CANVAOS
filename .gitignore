@@ -1,0 +1,6 @@
+# Zip archives (already extracted)
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db

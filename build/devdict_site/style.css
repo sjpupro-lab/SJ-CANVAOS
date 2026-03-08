@@ -1,0 +1,83 @@
+body{
+  margin:0;
+  background:#0b0d10;
+  color:#e6edf3;
+  font-family: "Segoe UI","Noto Sans KR",sans-serif;
+}
+header{
+  height:60px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0 20px;
+  background:#14171c;
+  border-bottom:1px solid #2a2f36;
+}
+.logo{ font-weight:700; font-size:20px; }
+#searchBox{
+  background:#0b0d10;
+  border:1px solid #2a2f36;
+  color:white;
+  padding:8px;
+  border-radius:6px;
+  width: 280px;
+}
+.container{ display:flex; height:calc(100vh - 60px - 80px); }
+#sidebar{
+  width:230px;
+  background:#14171c;
+  padding:10px;
+  border-right:1px solid #2a2f36;
+}
+.tab{
+  width:100%;
+  margin-bottom:8px;
+  padding:10px;
+  background:#0b0d10;
+  border:1px solid #2a2f36;
+  color:white;
+  border-radius:6px;
+  cursor:pointer;
+}
+.tab:hover{ background:#1c2128; }
+.support{ margin-top: 14px; }
+main{ flex:1; padding:25px; overflow:auto; }
+footer{
+  height:80px;
+  background:#14171c;
+  border-top:1px solid #2a2f36;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  color:#8b949e;
+}
+.r{ color: rgba(255,120,120,1); }
+.g{ color: rgba(120,255,170,1); }
+.b{ color: rgba(120,180,255,1); }
+.a{ color: rgba(255,210,120,1); }
+.entry{
+  background:#14171c;
+  border:1px solid #2a2f36;
+  border-radius:10px;
+  padding:14px 14px;
+  margin:12px 0;
+}
+.entry h3{ margin:0 0 8px 0; font-size:16px; }
+.entry p{ margin:0 0 10px 0; color:#c9d1d9; }
+.badges{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+.badge{
+  font-size:12px;
+  padding:3px 8px;
+  border-radius:999px;
+  border:1px solid #2a2f36;
+  background:#0b0d10;
+  color:#e6edf3;
+}
+.badge.r{ border-color: rgba(255,120,120,0.6); color: rgba(255,120,120,1); }
+.badge.g{ border-color: rgba(120,255,170,0.6); color: rgba(120,255,170,1); }
+.badge.b{ border-color: rgba(120,180,255,0.6); color: rgba(120,180,255,1); }
+.badge.a{ border-color: rgba(255,210,120,0.6); color: rgba(255,210,120,1); }
+.small{ color:#8b949e; font-size:12px; }
+.pilllink{ color:#8b949e; text-decoration:none; border-bottom:1px dotted #2a2f36; }
+.pilllink:hover{ color:#e6edf3; }

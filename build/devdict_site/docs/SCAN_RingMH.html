@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SCAN_RingMH - SJ CANVAS OS Docs</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+main{padding:20px; max-width: 980px; margin: 0 auto;}
+pre.code{background:#0b0d10; border:1px solid #2a2f36; padding:12px; border-radius:10px; overflow:auto;}
+code{background:#0b0d10; border:1px solid #2a2f36; padding:2px 6px; border-radius:6px;}
+.spacer{height:10px;}
+</style>
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="../index.html">← 사전으로</a></div>
+  <h1>SCAN_RingMH</h1>
+  <h1>SCAN: Ring(MH) 수학 정의</h1>
+<div class='spacer'></div>
+<h2>1. 개요</h2>
+<div class='spacer'></div>
+<p>Ring(MH)는 Manhattan Distance 기반 나선형 스캔이다.</p>
+<p>중심 (cx, cy)에서 시작하여 반경 r=0,1,2,... 순서로</p>
+<p>각 링(Chebyshev shell)의 셀을 결정론적으로 열거한다.</p>
+<div class='spacer'></div>
+<h2>2. 수학 정의</h2>
+<div class='spacer'></div>
+<p>  Center: (cx, cy) = (512, 512)</p>
+<div class='spacer'></div>
+<p>  반경 r의 Ring = { (x,y) | max(|x-cx|, |y-cy|) == r }</p>
+<div class='spacer'></div>
+<p>  열거 순서 (시계방향):</p>
+<p>  1. 상단 변: y=cy-r, x: cx-r -&gt; cx+r</p>
+<p>  2. 우측 변: x=cx+r, y: cy-r+1 -&gt; cy+r</p>
+<p>  3. 하단 변: y=cy+r, x: cx+r-1 -&gt; cx-r</p>
+<p>  4. 좌측 변: x=cx-r, y: cy+r-1 -&gt; cy-r+1</p>
+<div class='spacer'></div>
+<h2>3. 결정론 보장 조건</h2>
+<div class='spacer'></div>
+<ul>
+<li>동일한 (cx,cy)와 격자 크기에서 항상 동일한 순서</li>
+<li>r=0: 단일 셀 (cx,cy) 하나만 방문</li>
+<li>경계 클리핑: 격자 범위 [0,W) x [0,H) 벗어나면 건너뜀</li>
+<li>방문 순서 절대 변경 불가</li>
+</ul>
+<div class='spacer'></div>
+<h2>4. 전체 셀 수</h2>
+<div class='spacer'></div>
+<p>  1024 x 1024 격자 기준:</p>
+<p>  r=0: 1개, r=k: 8k개 (경계 미달 제외), 최대 r=511</p>
+<p>  총합: 1,048,576 = 1024^2</p>
+<div class='spacer'></div>
+<h2>5. 의사코드</h2>
+<div class='spacer'></div>
+<p>  function ring_mh_scan(grid, cx, cy, callback):</p>
+<p>    callback(cx, cy)</p>
+<p>    for r = 1 to MAX_RADIUS:</p>
+<p>      y = cy - r</p>
+<p>      for x = cx-r to cx+r:</p>
+<p>        if in_bounds(x,y): callback(x,y)</p>
+<p>      x = cx + r</p>
+<p>      for y = cy-r+1 to cy+r:</p>
+<p>        if in_bounds(x,y): callback(x,y)</p>
+<p>      y = cy + r</p>
+<p>      for x = cx+r-1 downto cx-r:</p>
+<p>        if in_bounds(x,y): callback(x,y)</p>
+<p>      x = cx - r</p>
+<p>      for y = cy+r-1 downto cy-r+1:</p>
+<p>        if in_bounds(x,y): callback(x,y)</p>
+<div class='spacer'></div>
+<p>---</p>
+<div class='spacer'></div>
+<h2>6. Phase 0 알고리즘 주의사항 (known issue)</h2>
+<div class='spacer'></div>
+<p>현재 spec 4.2 구현의 MH Ring에서 **x축 포인트(dy=0, dx!=0)가 생성되지 않는다.**</p>
+<div class='spacer'></div>
+<p>원인: 각 쿼드런트는 t=0..d-1을 순회하는데,</p>
+<p>dx=t, dy=d-t 에서 dy=0이 되려면 t=d 가 필요하지만 t &lt; d 조건으로 제한됨.</p>
+<div class='spacer'></div>
+<p>영향:</p>
+<ul>
+<li>(513,512), (514,512), ... (x축 방향 셀)이 스캔에서 누락</li>
+<li>y=512 행에 HELLO를 심어도 (512,512) 첫 글자만 실행됨</li>
+<li>test_scan은 통과: 링마다 2개 중복 + 2개 누락이 상쇄되어 총합=1,048,576</li>
+</ul>
+<div class='spacer'></div>
+<p>Phase 1 수정 방향:</p>
+<ul>
+<li>각 쿼드런트 t 범위를 0..d 로 확장하고 경계 중복 제거, 또는</li>
+<li>쿼드런트 분할 방식을 4변 열거로 교체 (Chebyshev shell처럼)</li>
+</ul>
+<div class='spacer'></div>
+</main>
+</body>
+</html>

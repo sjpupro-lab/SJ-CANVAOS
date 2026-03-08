@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SPEC_CanvasOS_QuadBoot_v1 - SJ CANVAS OS Docs</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+main{padding:20px; max-width: 980px; margin: 0 auto;}
+pre.code{background:#0b0d10; border:1px solid #2a2f36; padding:12px; border-radius:10px; overflow:auto;}
+code{background:#0b0d10; border:1px solid #2a2f36; padding:2px 6px; border-radius:6px;}
+.spacer{height:10px;}
+</style>
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="../index.html">← 사전으로</a></div>
+  <h1>SPEC_CanvasOS_QuadBoot_v1</h1>
+  <h1>SPEC: CanvasOS QuadBoot v1</h1>
+<div class='spacer'></div>
+<h2>1. 개요</h2>
+<div class='spacer'></div>
+<p>CanvasOS는 1024x1024 Cell 격자 위에서 동작하는 결정론적 타일 실행 시스템이다.</p>
+<p>중심(512,512)에서 시작하는 Ring(MH) 스캔을 통해 모든 Cell을 순회하며,</p>
+<p>각 Cell의 A_word에 따라 게이트 개폐·분기·I/O를 수행한다.</p>
+<div class='spacer'></div>
+<h2>2. 기본 용어</h2>
+<div class='spacer'></div>
+<p>| 용어 | 정의 |</p>
+<p>|------|------|</p>
+<p>| Cell | 1024x1024 격자의 단일 타일. 좌표 (x,y), 0&lt;=x,y&lt;1024 |</p>
+<p>| A_word | 32비트: [31:24]=Gate, [23:16]=Opcode, [15:0]=Arg |</p>
+<p>| TileGate | 4096개 게이트 슬롯. 기본 CLOSE, 명시적 OPEN만 효과 |</p>
+<p>| B-page | 256행 ROM. 각 행 = 규칙(Rule) 1개 |</p>
+<p>| CVP | CanVas Page. ABGR 순서 바이너리 포맷 |</p>
+<div class='spacer'></div>
+<h2>3. A_word 비트 구조</h2>
+<div class='spacer'></div>
+<p>    [31:24]  GateID   (8비트, 0x00~0xFF)</p>
+<p>    [23:16]  Opcode   (8비트)</p>
+<p>    [15: 0]  Arg      (16비트)</p>
+<div class='spacer'></div>
+<p>    Opcode 테이블:</p>
+<p>    0x00  NOP      아무것도 하지 않음</p>
+<p>    0x01  OPEN     게이트 GateID를 OPEN 상태로 설정</p>
+<p>    0x02  CLOSE    게이트 GateID를 CLOSE 상태로 설정</p>
+<p>    0x03  BRANCH   Arg 좌표로 스캔 포인터 점프</p>
+<p>    0x04  LOAD     CVP에서 Cell 로드</p>
+<p>    0x05  SAVE     CVP로 Cell 저장</p>
+<p>    0xFF  HALT     실행 중지</p>
+<div class='spacer'></div>
+<h2>4. QuadBoot 시퀀스</h2>
+<div class='spacer'></div>
+<p>    1. 파워온 -&gt; Cell(512,512) 로드</p>
+<p>    2. Ring(MH) 스캔 초기화: radius=0, dir=EAST</p>
+<p>    3. 각 Cell: A_word 디코드 -&gt; Gate 확인 -&gt; OPEN이면 실행</p>
+<p>    4. 스캔 완료 후 -&gt; B-page 룰 적용</p>
+<p>    5. CVP 세이브 (ABGR 순)</p>
+<p>    6. 다음 프레임 반복</p>
+<div class='spacer'></div>
+<h2>5. TileGate 규칙</h2>
+<div class='spacer'></div>
+<ul>
+<li>총 4096개 슬롯 (GateID 0x000 ~ 0xFFF)</li>
+<li>초기 상태: 전부 CLOSE</li>
+<li>OPEN 명령 수신 시에만 해당 슬롯 OPEN</li>
+<li>CLOSE는 명시적 CLOSE 명령 또는 리셋 시</li>
+<li>Gate CLOSE 상태의 Cell은 Opcode 무시</li>
+</ul>
+<div class='spacer'></div>
+<h2>6. CVP I/O 포맷</h2>
+<div class='spacer'></div>
+<p>    파일 헤더 (8 bytes):</p>
+<p>      [0..1]  매직 &quot;CV&quot;</p>
+<p>      [2..3]  버전 0x0001</p>
+<p>      [4..5]  너비 (LE16)</p>
+<p>      [6..7]  높이 (LE16)</p>
+<div class='spacer'></div>
+<p>    픽셀 데이터 (너비 x 높이 x 4 bytes):</p>
+<p>      각 픽셀: A_word (Alpha=Gate) -&gt; B -&gt; G -&gt; R</p>
+<p>      저장 순서: 행 우선(row-major), 좌상단 기준</p>
+<div class='spacer'></div>
+<h2>7. B-page ROM 구조</h2>
+<div class='spacer'></div>
+<p>    총 256행. 각 행 = 16 bytes:</p>
+<p>      [0..3]   조건 마스크 (A_word AND mask)</p>
+<p>      [4..7]   조건 값    (masked == value 이면 실행)</p>
+<p>      [8..11]  실행 A_word</p>
+<p>      [12..15] 예약</p>
+<div class='spacer'></div>
+<div class='spacer'></div>
+</main>
+</body>
+</html>

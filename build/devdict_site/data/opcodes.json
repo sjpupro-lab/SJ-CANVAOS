@@ -1,0 +1,98 @@
+[
+  {
+    "name": "WH_GATE_OPEN",
+    "code": 16,
+    "class_": "OP_GATE",
+    "tags": "gate,open,wh,space",
+    "keywords": "GateSpace sched_spawn wake recharge OPEN volt volh WH_OP_GATE_OPEN gate_open_tile gate_open_space_ctx",
+    "desc": "WH opcode: open a single tile gate. C1.A=gate_id (low16), target_kind=WH_TGT_TILE."
+  },
+  {
+    "name": "WH_GATE_CLOSE",
+    "code": 17,
+    "class_": "OP_GATE",
+    "tags": "gate,close,wh,space",
+    "keywords": "GateSpace sched_tick sleep CLOSE volt volh WH_OP_GATE_CLOSE gate_close_tile gate_close_space_ctx",
+    "desc": "WH opcode: close a single tile gate. C1.A=gate_id (low16), target_kind=WH_TGT_TILE."
+  },
+  {
+    "name": "WH_WRITE",
+    "code": 32,
+    "class_": "OP_TIME",
+    "tags": "wh,time,commit,log",
+    "keywords": "WhiteHole TimeLane tick commit log wh_write_record WH_LANE wh_cap",
+    "desc": "Write a 2-cell WH record at circular tick-indexed address (mod WH_CAP)."
+  },
+  {
+    "name": "BH_DECAY",
+    "code": 33,
+    "class_": "OP_TIME",
+    "tags": "bh,energy,decay,pid",
+    "keywords": "BlackHole energy TTL decay pid bh_decay_energy bh_set_energy sched_tick BH_STATE",
+    "desc": "Decay BH energy for pid; reaching 0 triggers SLEEP + gate close."
+  },
+  {
+    "name": "WH_IPC_SEND",
+    "code": 48,
+    "class_": "OP_IPC",
+    "tags": "ipc,wh,send,relay",
+    "keywords": "IPC send recv sched_ipc_send sched_ipc_recv ipc_cursor dst_pid src_pid payload_key mount_canvas Phase5",
+    "desc": "WH IPC record. C0:A=dst_pid,G=dst_canvas,R=slot. C1:A=src_pid,G=gate_hi,R=gate_lo. Consumed via ipc_cursor scan."
+  },
+  {
+    "name": "CVP_SAVE",
+    "code": 64,
+    "class_": "OP_CVP",
+    "tags": "cvp,io,save,snapshot",
+    "keywords": "cvp_save_ctx EngineContext CvpHeader scan_policy bpage_version contract_hash CVP_CONTRACT_HASH_V1 CANVAS_BASE GATE_STATE WH_LANE BH_STATE",
+    "desc": "Save EngineContext to .cvp file: header locks + TLV sections + per-section CRC32."
+  },
+  {
+    "name": "CVP_LOAD",
+    "code": 65,
+    "class_": "OP_CVP",
+    "tags": "cvp,io,load,restore",
+    "keywords": "cvp_load_ctx dry_run CVP_LOCK_SKIP GATE_STATE active_open sync tick restore save_tick",
+    "desc": "Load .cvp into EngineContext. Enforces lock fields (use CVP_LOCK_SKIP to skip). Restores tick, cells, gates, active_open."
+  },
+  {
+    "name": "CVP_VALIDATE",
+    "code": 66,
+    "class_": "OP_CVP",
+    "tags": "cvp,validate,crc,lock",
+    "keywords": "cvp_validate magic CVP1 header_crc CRC32 lock mismatch CVP_ERR_LOCK wh_cap integrity",
+    "desc": "Check .cvp header magic/version/CRC and lock fields without loading canvas data."
+  },
+  {
+    "name": "CVP_REPLAY",
+    "code": 67,
+    "class_": "OP_CVP",
+    "tags": "cvp,replay,wh,determinism",
+    "keywords": "cvp_replay_ctx WH_LANE from_tick to_tick wh_cap circular window wh_exec_min gate determinism TimeMachine",
+    "desc": "Replay WH records from .cvp into ctx. Clamps to retained WH window [save_tick-WH_CAP, save_tick]."
+  },
+  {
+    "name": "ENGCTX_TICK",
+    "code": 80,
+    "class_": "OP_ENGINE",
+    "tags": "engctx,tick,heartbeat",
+    "keywords": "engctx_tick ctx->tick WH_OP_TICK heartbeat advance engine loop",
+    "desc": "Advance engine by one tick. Writes WH_OP_TICK heartbeat record. Returns 0 or -1."
+  },
+  {
+    "name": "ENGCTX_REPLAY",
+    "code": 81,
+    "class_": "OP_ENGINE",
+    "tags": "engctx,replay,wh,sideeffect",
+    "keywords": "engctx_replay from_tick to_tick wh_exec_record WH_CAP window gate open close deterministic",
+    "desc": "Re-execute WH records in tick range as side-effects (gates). Clamps to WH window."
+  },
+  {
+    "name": "ENGCTX_INSPECT",
+    "code": 82,
+    "class_": "OP_ENGINE",
+    "tags": "engctx,inspect,cell,lookup",
+    "keywords": "engctx_inspect_cell x y at_tick snapshot canvas_contract ABGR",
+    "desc": "Return cell at (x,y) from current snapshot. Phase4: snapshot-only; Phase5 adds sparse diff."
+  }
+]
