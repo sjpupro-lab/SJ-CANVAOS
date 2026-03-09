@@ -4,3 +4,18 @@
 # OS files
 .DS_Store
 Thumbs.db
+
+# Build outputs
+*.o
+sj_compress
+sj_compress_v2
+sj_compress_v3
+sj_v3f
+
+# Test data (generated at runtime)
+test_data/*.bin
+test_data/*.sj3f
+
+# Python
+__pycache__/
+*.pyc
