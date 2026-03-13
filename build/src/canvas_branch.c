@@ -1,5 +1,5 @@
 /*
- * canvas_branch.c — Phase 5: Branch 구현 스켈레톤
+ * canvas_branch.c — Phase 5: Branch 구현
  */
 #include "../include/canvas_branch.h"
 #include "../include/canvasos_gate_ops.h"

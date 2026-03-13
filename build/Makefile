@@ -427,4 +427,17 @@ $(TEST_GUI): tests/test_gui.c $(GUI_SRC)
 gui_test: $(TEST_GUI)
 	./$(TEST_GUI)
 
-.PHONY: gui_test
+# ─────────────────────────────────────────────────────────────────
+# GUI-Engine Bridge: Cell visualization + Event → WH
+# ─────────────────────────────────────────────────────────────────
+
+BRIDGE_GUI_SRC = src/gui_engine_bridge.c $(GUI_SRC)
+TEST_GUI_BRIDGE = tests/test_gui_bridge
+
+$(TEST_GUI_BRIDGE): tests/test_gui_bridge.c $(BRIDGE_GUI_SRC) $(CORE_SRC)
+	$(CC) $(CFLAGS) -o $@ tests/test_gui_bridge.c $(BRIDGE_GUI_SRC) $(CORE_SRC) $(LDFLAGS)
+
+gui_bridge_test: $(TEST_GUI_BRIDGE)
+	./$(TEST_GUI_BRIDGE)
+
+.PHONY: gui_test gui_bridge_test

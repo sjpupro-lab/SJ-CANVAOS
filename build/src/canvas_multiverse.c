@@ -1,9 +1,11 @@
 /*
- * canvas_multiverse.c — Phase 5 스켈레톤 구현
+ * canvas_multiverse.c — Phase 5: Multiverse Engine
  *
- * 현재 상태:
- *   - mve_init, mve_add_lane, mve_print_capacity: 구현됨
- *   - mve_tick, mve_tick_lu: 스켈레톤 (Phase 5 완성 필요)
+ * 구현 완료:
+ *   - mve_init, mve_add_lane, mve_add_universe, mve_print_capacity
+ *   - mve_tick, mve_tick_lu: lane_exec_tick + merge_tick 사용
+ *   - mve_branch_fork_tick: branch_switch + lane_exec_tick
+ *   - mve_save_meta / mve_load_meta: binary 직렬화
  *   - GPU dispatch: Phase 6 예약
  *
  * 빌드: src/Makefile에 canvas_multiverse.c 추가 필요

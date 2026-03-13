@@ -181,7 +181,7 @@ void sched_dump(const Scheduler *sc) {
     }
 }
 
-/* ---- Phase 4/5 stubs ---- */
+/* ---- Phase 4/5: CVP / IPC ---- */
 void sched_set_cvp(Scheduler *sc, uint32_t pid, uint32_t cvp_section) {
     for (uint32_t i = 0; i < sc->count; i++) {
         if (sc->procs[i].pid == pid) {
