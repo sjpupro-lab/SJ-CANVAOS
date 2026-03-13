@@ -74,6 +74,14 @@ int  vm_step(EngineContext *ctx, VmState *vm);
 int  vm_run(EngineContext *ctx, VmState *vm);
 void vm_trace_set(VmState *vm, bool enable);
 
+/* ── Phase-11: VM Runtime Bridge ──────────────────────── */
+#include "canvasos_proc.h"
+#include "canvasos_pipe.h"
+void vm_bridge_init(ProcTable *pt, PipeTable *pipe);
+bool vm_bridge_is_active(void);
+int  vm_run_bridged(EngineContext *ctx, VmState *vm,
+                    ProcTable *pt, PipeTable *pipes);
+
 /* ── 셀에 명령어 심기 헬퍼 ──────────────────────────────── */
 static inline void vm_plant(EngineContext *ctx,
                             uint32_t x, uint32_t y,

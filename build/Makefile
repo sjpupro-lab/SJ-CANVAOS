@@ -70,6 +70,7 @@ clean:
 	rm -f tests/test_patchF tests/test_patchG tests/test_patchG_sanitize
 	rm -f examples/demo_patchF examples/hello_canvas
 	rm -f canvasos_cli tervas sjterm canvasos_launcher
+	rm -f tests/test_sj_stream_roundtrip
 
 CLI_SRC = src/canvasos_cli.c src/scan_ringmh.c src/active_set.c \
           src/canvasfs.c src/canvasfs_bpage.c \
@@ -122,7 +123,7 @@ $(TEST_TERVAS): tests/test_tervas.c $(TERVAS_SRC) $(CORE_SRC)
 test_tervas: $(TEST_TERVAS)
 	./$(TEST_TERVAS)
 
-test_all: tests/test_phase6 tests/test_tervas tests/test_phase8 tests/test_phase9 tests/test_phase10 tests/test_bridge tests/test_patchB tests/test_patchC tests/test_patchD tests/test_patchE tests/test_patchF tests/test_patchG tests/test_patchH
+test_all: tests/test_phase6 tests/test_tervas tests/test_phase8 tests/test_phase9 tests/test_phase10 tests/test_bridge tests/test_patchB tests/test_patchC tests/test_patchD tests/test_patchE tests/test_patchF tests/test_patchG tests/test_patchH tests/test_sj_stream_roundtrip
 	@echo "=== Phase-6 ==="
 	@./tests/test_phase6
 	@echo "=== Phase-7 Tervas ==="
@@ -149,6 +150,8 @@ test_all: tests/test_phase6 tests/test_tervas tests/test_phase8 tests/test_phase
 	@./$(TEST_PATCHG)
 	@echo "=== Patch-H Deterministic OS Tester ==="
 	@./$(TEST_PATCHH)
+	@echo "=== SJ-Stream Packet Roundtrip ==="
+	@./$(TEST_STREAM_ROUNDTRIP)
 
 tervas: $(TERVAS_BIN)
 
@@ -393,3 +396,17 @@ dashboard: test_all
 	@echo "╚══════════════════════════════════════════╝"
 
 .PHONY: dashboard patchG_test sanitize release_check release
+
+# ─────────────────────────────────────────────────────────────────
+# SJ-Stream Packet: 1024B Fixed Streaming Protocol
+# ─────────────────────────────────────────────────────────────────
+
+TEST_STREAM_ROUNDTRIP = tests/test_sj_stream_roundtrip
+
+$(TEST_STREAM_ROUNDTRIP): tests/test_sj_stream_roundtrip.c src/sj_stream_packet.c
+	$(CC) $(CFLAGS) -o $@ tests/test_sj_stream_roundtrip.c src/sj_stream_packet.c
+
+stream_test: $(TEST_STREAM_ROUNDTRIP)
+	./$(TEST_STREAM_ROUNDTRIP)
+
+.PHONY: stream_test

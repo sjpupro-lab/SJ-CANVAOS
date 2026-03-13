@@ -43,6 +43,11 @@
 typedef int (*SyscallHandler)(EngineContext *ctx, uint32_t pid,
                               uint32_t a0, uint32_t a1, uint32_t a2);
 
+/* Phase-11: 커널 테이블 주입 (launcher에서 boot 시 호출) */
+#include "canvasos_proc.h"
+#include "canvasos_pipe.h"
+void syscall_set_tables(ProcTable *pt, PipeTable *pipe);
+
 void syscall_init(void);
 int  syscall_register(uint8_t nr, SyscallHandler handler);
 int  syscall_dispatch(EngineContext *ctx, uint32_t pid, uint8_t nr,

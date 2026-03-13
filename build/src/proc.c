@@ -156,6 +156,8 @@ int proc_exit(ProcTable *pt, uint32_t pid, uint8_t exit_code) {
 
 int proc_wait(ProcTable *pt, uint32_t parent_pid, uint8_t *status) {
     if (!pt) return -1;
+
+    /* Phase 1: ZOMBIE 자식 즉시 회수 */
     for (int i = 0; i < PROC8_MAX; i++) {
         Proc8 *p = &pt->procs[i];
         if (p->pid != PROC_SLOT_FREE_PID && p->parent_pid == parent_pid && p->state == PROC_ZOMBIE) {
@@ -170,6 +172,15 @@ int proc_wait(ProcTable *pt, uint32_t parent_pid, uint8_t *status) {
             return (int)pid;
         }
     }
+
+    /* Phase 2: ZOMBIE 없음 → 부모를 BLOCKED(=WAITING)으로 전환 */
+    Proc8 *parent = proc_find(pt, parent_pid);
+    if (parent && parent->state == PROC_RUNNING) {
+        parent->state = PROC_BLOCKED;
+        gate_close_space_ctx(pt->ctx, parent->space);
+        if (pt->ctx) proc_write_wh(pt->ctx, WH_OP_SLEEP, parent, 0xFF, 0);
+    }
+
     return -1;
 }
 
@@ -180,7 +191,25 @@ int proc_tick(ProcTable *pt) {
         Proc8 *p = &pt->procs[i];
         if (p->pid == PROC_SLOT_FREE_PID || p->state == PROC_ZOMBIE) continue;
 
+        /* 펜딩 시그널 처리 */
         (void)sig_check(pt, p->pid);
+
+        /* BLOCKED(WAITING) → 자식 ZOMBIE 감지 시 깨움 */
+        if (p->state == PROC_BLOCKED) {
+            for (int j = 0; j < PROC8_MAX; j++) {
+                Proc8 *child = &pt->procs[j];
+                if (child->pid != PROC_SLOT_FREE_PID &&
+                    child->parent_pid == p->pid &&
+                    child->state == PROC_ZOMBIE) {
+                    p->state = PROC_RUNNING;
+                    gate_open_space_ctx(pt->ctx, p->space);
+                    if (pt->ctx) proc_write_wh(pt->ctx, WH_OP_WAKE, p, 0, 0);
+                    break;
+                }
+            }
+            continue; /* BLOCKED 프로세스는 에너지 소비 안 함 */
+        }
+
         if (p->state != PROC_RUNNING) continue;
 
         ran++;
@@ -191,6 +220,7 @@ int proc_tick(ProcTable *pt) {
                                    (uint8_t)(p->energy > 255 ? 255 : p->energy),
                                    (uint8_t)(p->energy_max > 255 ? 255 : p->energy_max));
 
+        /* energy=0 → SLEEPING */
         if (p->energy == 0) {
             p->state = PROC_SLEEPING;
             gate_close_space_ctx(pt->ctx, p->space);

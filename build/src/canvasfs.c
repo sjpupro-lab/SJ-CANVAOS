@@ -586,3 +586,77 @@ FsResult fs_dir_ls(CanvasFS *fs,uint16_t dir_g,FsLsCb cb,void *u){
     }
     return FS_OK;
 }
+
+/* =====================================================
+ * FsMeta (Phase-11 Sprint 2)
+ *
+ * META1 타일 레이아웃 확장:
+ *   (0,1).A = real_len (기존)
+ *   (0,2).A = created_tick
+ *   (0,3).A = modified_tick
+ *   (0,4).B = owner_uid_lo, G = owner_uid_hi
+ *   (0,4).R = mode_lo, pad = mode_hi
+ * ===================================================== */
+FsResult fs_meta_read(CanvasFS *fs, FsKey key, FsMeta *out) {
+    if (!out) return FS_ERR_OOB;
+    Cell *sc = slotcell(fs, key);
+    if (sc->B != FS_SLOT_LARGE) return FS_ERR_NOTMETA;
+    uint16_t meta = slot_meta_gate(sc);
+    if (!IS_META(fs, meta)) return FS_ERR_NOTMETA;
+
+    out->size          = meta_get_len(fs, meta);
+    out->created_tick  = tc(fs, meta, 0, 2)->A;
+    out->modified_tick = tc(fs, meta, 0, 3)->A;
+    Cell *c4 = tc(fs, meta, 0, 4);
+    out->owner_uid = (uint16_t)(c4->B | ((uint16_t)c4->G << 8));
+    out->mode      = (uint16_t)(c4->R | ((uint16_t)c4->pad << 8));
+    return FS_OK;
+}
+
+FsResult fs_meta_write(CanvasFS *fs, FsKey key, const FsMeta *meta) {
+    if (!meta) return FS_ERR_OOB;
+    Cell *sc = slotcell(fs, key);
+    if (sc->B != FS_SLOT_LARGE) return FS_ERR_NOTMETA;
+    uint16_t mg = slot_meta_gate(sc);
+    if (!IS_META(fs, mg)) return FS_ERR_NOTMETA;
+
+    meta_set_len(fs, mg, meta->size);
+    tc(fs, mg, 0, 2)->A = meta->created_tick;
+    tc(fs, mg, 0, 3)->A = meta->modified_tick;
+    Cell *c4 = tc(fs, mg, 0, 4);
+    c4->B   = (uint8_t)(meta->owner_uid & 0xFF);
+    c4->G   = (uint8_t)(meta->owner_uid >> 8);
+    c4->R   = (uint8_t)(meta->mode & 0xFF);
+    c4->pad = (uint8_t)(meta->mode >> 8);
+    return FS_OK;
+}
+
+/* ---- fs_rename (atomic: unlink old + write new entry with same FsKey) ---- */
+FsResult fs_rename(CanvasFS *fs, uint16_t dir_g,
+                   const char *old_name, const char *new_name) {
+    FsResult r = gate_check(fs, dir_g);
+    if (r != FS_OK) return r;
+    if (!IS_DIR(fs, dir_g)) return FS_ERR_NOTDIR;
+
+    uint32_t old_h = fnv1a(old_name);
+    int old_slot = dir_find(fs, dir_g, old_name, old_h);
+    if (old_slot < 0) return FS_ERR_NOTFOUND;
+
+    /* new_name이 이미 존재하면 에러 */
+    uint32_t new_h = fnv1a(new_name);
+    if (dir_find(fs, dir_g, new_name, new_h) >= 0) return FS_ERR_EXISTS;
+
+    /* 기존 엔트리에서 FsKey 읽기 */
+    FsKey key;
+    dir_slot_read(fs, dir_g, old_slot, NULL, &key, NULL);
+
+    /* 기존 엔트리 삭제 */
+    dir_slot_clear(fs, dir_g, old_slot);
+
+    /* 새 이름으로 재등록 */
+    int new_slot = dir_find_empty(fs, dir_g, new_h);
+    if (new_slot < 0) return FS_ERR_NOMEM;
+    dir_slot_write(fs, dir_g, new_slot, new_h, key, new_name);
+
+    return FS_OK;
+}

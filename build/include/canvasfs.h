@@ -100,6 +100,20 @@ FsResult fs_stat(CanvasFS *fs, FsKey key, FsSlotClass *cls,
 FsResult fs_meta_set_len(CanvasFS *fs, FsKey key, uint32_t v);
 FsResult fs_meta_get_len(CanvasFS *fs, FsKey key, uint32_t *out);
 
+/* ---- FsMeta (Phase-11 Sprint 2) ---- */
+typedef struct {
+    uint32_t size;            /* file size in bytes */
+    uint32_t created_tick;    /* creation tick */
+    uint32_t modified_tick;   /* last modification tick */
+    uint16_t owner_uid;
+    uint16_t mode;            /* rwxrwxrwx (9-bit) */
+} FsMeta;
+
+FsResult fs_meta_read(CanvasFS *fs, FsKey key, FsMeta *out);
+FsResult fs_meta_write(CanvasFS *fs, FsKey key, const FsMeta *meta);
+FsResult fs_rename(CanvasFS *fs, uint16_t dir_g,
+                   const char *old_name, const char *new_name);
+
 /* Directory */
 FsResult fs_mkdir(CanvasFS *fs, uint16_t dir_gate);
 FsResult fs_dir_create(CanvasFS *fs, uint16_t dir_gate, const char *name,

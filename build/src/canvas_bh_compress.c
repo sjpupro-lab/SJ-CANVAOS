@@ -1,11 +1,11 @@
 /*
  * canvas_bh_compress.c — Phase 5: BH 시간 의미 압축 구현
  *
- * 구현 상태:
- *   bh_analyze_window: BH-IDLE 구현 완료, LOOP/BURST 스켈레톤
+ * 구현 상태: Phase-11 완성
+ *   bh_analyze_window: IDLE/LOOP/BURST 모두 구현 완료
  *   bh_compress: WH 기록 구현 완료
- *   bh_replay_summary: IDLE 완료, LOOP/BURST 스켈레톤
- *   bh_run_all: 스켈레톤 (Phase 5 완성 필요)
+ *   bh_replay_summary: IDLE/LOOP/BURST 모두 구현 완료
+ *   bh_run_all: WH 스캔 + gate별 청크 분석 구현 완료
  */
 #include "../include/canvas_bh_compress.h"
 #include "../include/engine_time.h"
@@ -80,14 +80,59 @@ static int _detect_loop(EngineContext *ctx,
                          uint32_t from_tick, uint32_t to_tick,
                          uint16_t gate_id,
                          BhSummary *out) {
-    /* Phase 5 TODO:
-     * 1. from_tick..to_tick에서 gate_id 관련 레코드 추출
-     * 2. 연속 레코드 간 (opcode, target) 패턴 비교
-     * 3. 동일 패턴이 BH_LOOP_MIN_REPEAT 이상이면 stride 계산
-     * 4. out에 LOOP 요약 채우기
-     */
-    (void)ctx; (void)from_tick; (void)to_tick; (void)gate_id; (void)out;
-    return 0; /* stub */
+    uint32_t ticks = to_tick - from_tick;
+    if (ticks < BH_LOOP_MIN_REPEAT * 2) return 0;
+
+    /* 윈도우 내 해시 패턴 수집 (최대 64개) */
+    #define LOOP_WIN 64
+    uint32_t hashes[LOOP_WIN];
+    uint32_t n = 0;
+
+    for (uint32_t t = from_tick; t < to_tick && n < LOOP_WIN; t++) {
+        WhRecord r;
+        if (!wh_read_record(ctx, t, &r)) continue;
+        if ((uint16_t)(r.target_addr & 0xFFFFu) != gate_id) continue;
+        if (r.opcode_index == WH_OP_NOP || r.opcode_index == WH_OP_TICK) continue;
+        /* FNV-1a hash of (opcode, target, param) */
+        uint32_t h = 2166136261u;
+        h ^= (uint32_t)DK_INT(r.opcode_index); h *= 16777619u;
+        h ^= (uint32_t)DK_INT(r.param0);       h *= 16777619u;
+        h ^= (uint32_t)DK_INT(r.target_addr);  h *= 16777619u;
+        hashes[n++] = h;
+    }
+
+    if (n < BH_LOOP_MIN_REPEAT * 2) return 0;
+
+    /* period P를 1부터 n/2까지 시도 */
+    for (uint32_t p = 1; p <= n / BH_LOOP_MIN_REPEAT; p++) {
+        uint32_t repeats = 0;
+        bool match = true;
+        for (uint32_t i = p; i < n && match; i++) {
+            if (hashes[i] == hashes[i % p]) {
+                if (i % p == 0) repeats++;
+            } else {
+                match = false;
+            }
+        }
+        if (!match) continue;
+        if (repeats < BH_LOOP_MIN_REPEAT) continue;
+
+        /* LOOP 발견 */
+        uint32_t stride = (ticks > repeats && repeats > 0) ? ticks / repeats : 1;
+        *out = (BhSummary){
+            .rule          = BH_RULE_LOOP,
+            .from_tick     = from_tick,
+            .to_tick       = to_tick,
+            .gate_id       = gate_id,
+            .opcode        = 0,
+            .count         = repeats,
+            .stride        = stride,
+            .original_hash = _wh_range_hash(ctx, from_tick, to_tick),
+        };
+        return 1;
+    }
+    #undef LOOP_WIN
+    return 0;
 }
 
 /* ---- [BH-BURST] 폭주 이벤트 감지 ---- */
@@ -95,13 +140,40 @@ static int _detect_burst(EngineContext *ctx,
                           uint32_t from_tick, uint32_t to_tick,
                           uint16_t gate_id,
                           BhSummary *out) {
-    /* Phase 5 TODO:
-     * 1. 슬라이딩 윈도우(BH_BURST_WINDOW 크기)로 gate_id 이벤트 수 카운트
-     * 2. 창 내 count >= BH_BURST_THRESHOLD 이면 BURST 감지
-     * 3. 가장 큰 burst 구간을 선택해 out에 채우기
-     */
-    (void)ctx; (void)from_tick; (void)to_tick; (void)gate_id; (void)out;
-    return 0; /* stub */
+    uint32_t ticks = to_tick - from_tick;
+    if (ticks < BH_BURST_WINDOW) return 0;
+
+    /* 슬라이딩 윈도우: 각 틱의 gate_id 관련 이벤트 수 카운트 */
+    uint32_t best_start = 0, best_count = 0;
+
+    for (uint32_t w = from_tick; w + BH_BURST_WINDOW <= to_tick; w++) {
+        uint32_t count = 0;
+        for (uint32_t t = w; t < w + BH_BURST_WINDOW; t++) {
+            WhRecord r;
+            if (!wh_read_record(ctx, t, &r)) continue;
+            if ((uint16_t)(r.target_addr & 0xFFFFu) != gate_id) continue;
+            if (r.opcode_index == WH_OP_NOP || r.opcode_index == WH_OP_TICK) continue;
+            count++;
+        }
+        if (count > best_count) {
+            best_count = count;
+            best_start = w;
+        }
+    }
+
+    if (best_count < BH_BURST_THRESHOLD) return 0;
+
+    *out = (BhSummary){
+        .rule          = BH_RULE_BURST,
+        .from_tick     = best_start,
+        .to_tick       = best_start + BH_BURST_WINDOW,
+        .gate_id       = gate_id,
+        .opcode        = 0,
+        .count         = best_count,
+        .stride        = 0,
+        .original_hash = _wh_range_hash(ctx, best_start, best_start + BH_BURST_WINDOW),
+    };
+    return 1;
 }
 
 /* ---- bh_analyze_window ---- */
@@ -169,18 +241,30 @@ int bh_replay_summary(EngineContext *ctx, const BhSummary *s) {
             /* IDLE 복원: 해당 구간은 no-op. gate 상태 변화 없음. */
             return 0;
 
-        case BH_RULE_LOOP:
-            /* Phase 5 TODO:
-             * pattern을 s->count 회, s->stride 틱 간격으로 재실행.
-             * wh_exec_record() 루프.
-             */
-            return -1; /* not yet implemented */
+        case BH_RULE_LOOP: {
+            /* LOOP 복원: pattern을 count 회, stride 틱 간격으로 재실행 */
+            uint32_t stride = s->stride > 0 ? s->stride : 1;
+            for (uint32_t i = 0; i < s->count; i++) {
+                uint32_t t = s->from_tick + i * stride;
+                WhRecord rec;
+                if (wh_read_record(ctx, t, &rec))
+                    wh_exec_record(ctx, &rec);
+            }
+            return 0;
+        }
 
-        case BH_RULE_BURST:
-            /* Phase 5 TODO:
-             * s->from_tick 부터 s->count 개 이벤트를 순서대로 재실행.
-             */
-            return -1; /* not yet implemented */
+        case BH_RULE_BURST: {
+            /* BURST 복원: from_tick부터 count 개 이벤트 순서대로 재실행 */
+            uint32_t replayed = 0;
+            for (uint32_t t = s->from_tick; t < s->to_tick && replayed < s->count; t++) {
+                WhRecord rec;
+                if (!wh_read_record(ctx, t, &rec)) continue;
+                if ((uint16_t)(rec.target_addr & 0xFFFFu) != s->gate_id) continue;
+                wh_exec_record(ctx, &rec);
+                replayed++;
+            }
+            return 0;
+        }
 
         default:
             return -1;
@@ -189,22 +273,60 @@ int bh_replay_summary(EngineContext *ctx, const BhSummary *s) {
 
 /* ---- bh_run_all ---- */
 int bh_run_all(EngineContext *ctx, uint32_t current_tick) {
+    if (!ctx) return 0;
+
     /* [DK-1] 틱 경계 선언 */
     TickBoundaryGuard guard = dk_begin_tick(ctx, "bh_run_all");
 
-    /* Phase 5 TODO:
-     * 1. WH retained window [current_tick - WH_CAP, current_tick] 순회
-     * 2. gate_id별로 bh_analyze_window() 호출
-     * 3. 압축 가능하면 bh_compress() 호출
-     *
-     * 최적화 방향 (Phase 6):
-     * - gate별로 구간을 분리해서 병렬 분석
-     * - SIMD(AVX2)로 hash/compare 가속
-     */
     int compressed = 0;
-    (void)current_tick;
 
-    /* stub: 현재는 아무것도 압축하지 않음 */
+    /* WH retained window 계산 */
+    uint32_t wh_cap = (uint32_t)WH_CAP;
+    uint32_t from_tick = (current_tick > wh_cap) ? (current_tick - wh_cap) : 0;
+    uint32_t to_tick   = current_tick;
+
+    /* 윈도우를 BH_IDLE_MIN_TICKS 단위 청크로 분할하여 분석 */
+    uint32_t chunk_size = BH_IDLE_MIN_TICKS * 4;  /* 64 틱 청크 */
+    if (chunk_size == 0) chunk_size = 64;
+
+    /* gate_id 순회: WH에서 사용된 gate만 추적 (최적화) */
+    /* 간소화: 0~TILEGATE_COUNT에서 샘플링 — 최대 256개 gate 검사 */
+    #define BH_SCAN_GATES  256u
+    uint16_t gates_seen[BH_SCAN_GATES];
+    uint32_t gates_count = 0;
+
+    /* WH를 스캔하여 사용된 gate_id 수집 */
+    for (uint32_t t = from_tick; t < to_tick && gates_count < BH_SCAN_GATES; t++) {
+        WhRecord r;
+        if (!wh_read_record(ctx, t, &r)) continue;
+        uint16_t gid = (uint16_t)(r.target_addr & 0xFFFF);
+        /* 중복 확인 (간단한 선형 검색) */
+        bool found = false;
+        for (uint32_t g = 0; g < gates_count; g++) {
+            if (gates_seen[g] == gid) { found = true; break; }
+        }
+        if (!found) gates_seen[gates_count++] = gid;
+    }
+
+    /* 각 gate_id에 대해 청크별 분석 */
+    for (uint32_t g = 0; g < gates_count; g++) {
+        uint16_t gid = gates_seen[g];
+
+        for (uint32_t chunk_start = from_tick; chunk_start < to_tick;
+             chunk_start += chunk_size) {
+            uint32_t chunk_end = chunk_start + chunk_size;
+            if (chunk_end > to_tick) chunk_end = to_tick;
+
+            BhSummary summary;
+            int found = bh_analyze_window(ctx, chunk_start, chunk_end,
+                                          gid, &summary);
+            if (found > 0) {
+                int rc = bh_compress(ctx, &summary, &guard);
+                if (rc == 0) compressed++;
+            }
+        }
+    }
+    #undef BH_SCAN_GATES
 
     dk_end_tick(&guard);
     return compressed;

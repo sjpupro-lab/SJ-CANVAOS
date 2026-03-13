@@ -101,7 +101,14 @@ int merge_resolve_conflicts(MergeCtx *mc, EngineContext *ctx) {
                     wr.target_addr   = dk_cell_index(dj->x, dj->y);
                     wh_write_record(ctx, ctx->tick, &wr);
                 }
-                /* CONFLICT_GATE_CLOSE: Phase 5 TODO (gate API 연동) */
+                if (mc->cfg.on_conflict == CONFLICT_GATE_CLOSE) {
+                    /* 충돌한 셀의 gate를 강제 CLOSE */
+                    uint16_t gate_id = tile_id_of_xy(dj->x, dj->y);
+                    if (ctx->gates && gate_id < TILE_COUNT)
+                        ctx->gates[gate_id] = GATE_CLOSE;
+                    if (ctx->active_open && gate_id < TILE_COUNT)
+                        ctx->active_open[gate_id] = 0;
+                }
             }
         }
     }
@@ -178,9 +185,57 @@ int merge_apply(MergeCtx *mc, EngineContext *ctx) {
                 }
                 break;
 
-            case MERGE_CUSTOM:
-                /* Phase 5 TODO: RuleTable 기반 커스텀 merge */
+            case MERGE_CUSTOM: {
+                /* RuleTable 기반 커스텀 merge:
+                 * B 채널의 RuleEntry를 참조하여 exec_mode에 따라 동작.
+                 * EXEC_NOP → LAST_WINS 동작
+                 * EXEC_GATE → LOCK_WINS (gate_close 우선)
+                 * EXEC_COMMIT → ADDITIVE_G (누적)
+                 * EXEC_FS → FIRST_WINS (보존 우선)
+                 */
+                RuleTable *rt = ctx->rules;
+                ExecMode emode = EXEC_NOP;
+                if (rt) {
+                    emode = rt->entry[d->after_B].exec_mode;
+                }
+                switch (emode) {
+                    case EXEC_GATE:
+                        /* LOCK 우선: gate CLOSE delta만 적용 */
+                        if (d->flags & DF_GATE_CLOSE) {
+                            c->A = DK_INT(d->after_A);
+                            c->B = DK_INT(d->after_B);
+                            c->G = DK_INT(d->after_G);
+                            c->R = DK_INT(d->after_R);
+                        }
+                        break;
+                    case EXEC_COMMIT: {
+                        /* G 채널 누적 */
+                        uint32_t sum = (uint32_t)DK_INT(c->G)
+                                     + (uint32_t)DK_INT(d->after_G);
+                        c->G = DK_CLAMP_U8(sum);
+                        c->B = DK_INT(d->after_B);
+                        c->R = DK_INT(d->after_R);
+                        break;
+                    }
+                    case EXEC_FS:
+                        /* FIRST_WINS: before와 현재 셀이 같을 때만 적용 */
+                        if (c->A == DK_INT(d->before_A) &&
+                            c->G == DK_INT(d->before_G)) {
+                            c->A = DK_INT(d->after_A);
+                            c->B = DK_INT(d->after_B);
+                            c->G = DK_INT(d->after_G);
+                            c->R = DK_INT(d->after_R);
+                        }
+                        break;
+                    default: /* EXEC_NOP → LAST_WINS */
+                        c->A = DK_INT(d->after_A);
+                        c->B = DK_INT(d->after_B);
+                        c->G = DK_INT(d->after_G);
+                        c->R = DK_INT(d->after_R);
+                        break;
+                }
                 break;
+            }
         }
         applied++;
     }
