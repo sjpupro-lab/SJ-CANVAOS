@@ -440,4 +440,16 @@ $(TEST_GUI_BRIDGE): tests/test_gui_bridge.c $(BRIDGE_GUI_SRC) $(CORE_SRC)
 gui_bridge_test: $(TEST_GUI_BRIDGE)
 	./$(TEST_GUI_BRIDGE)
 
-.PHONY: gui_test gui_bridge_test
+# ─────────────────────────────────────────────────────────────────
+# Comprehensive Benchmark: OS basics + CanvasOS advantages
+# ─────────────────────────────────────────────────────────────────
+
+TEST_BENCHMARK = tests/test_benchmark
+
+$(TEST_BENCHMARK): tests/test_benchmark.c $(BRIDGE_GUI_SRC) $(P10_SRC) $(P8_KERN) $(P9_VM) $(CORE_SRC)
+	$(CC) $(CFLAGS) -o $@ tests/test_benchmark.c $(BRIDGE_GUI_SRC) $(P10_SRC) $(P8_KERN) $(P9_VM) $(CORE_SRC) $(LDFLAGS)
+
+benchmark: $(TEST_BENCHMARK)
+	./$(TEST_BENCHMARK)
+
+.PHONY: gui_test gui_bridge_test benchmark
