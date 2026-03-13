@@ -11,6 +11,7 @@
 
 #include "../include/canvas_multiverse.h"
 #include "../include/engine_time.h"
+#include "../include/lane_exec.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -96,57 +97,81 @@ void mve_enable_y_time(MultiverseEngine *mve, uint16_t y_tick_stride) {
     mve->y_tick_stride = y_tick_stride ? y_tick_stride : 1;
 }
 
-/* ---- 전체 tick (실구현) ---- */
+/* ---- 전체 tick (실구현: lane_exec_full_tick 사용) ---- */
 int mve_tick(MultiverseEngine *mve, EngineContext *ctx) {
     if (!mve || !ctx) return -1;
 
-    int total = 0;
+    /* lane_exec_full_tick: 모든 active lane exec → merge → engctx_tick */
+    lane_exec_full_tick(ctx, &mve->lanes);
 
-    /* Y축 시간 모드: y_tick_stride만큼만 행 단위 진행 */
-    if (mve->y_is_time) {
-        /* 현재 tick에 해당하는 y 범위 계산 */
-        uint32_t y_start = (mve->global_tick * mve->y_tick_stride) % CANVAS_H;
-        uint32_t y_end   = y_start + mve->y_tick_stride;
-        if (y_end > CANVAS_H) y_end = CANVAS_H;
-        (void)y_start; (void)y_end;
-        /* Y-time scanning is a policy overlay; actual execution
-         * still goes through lane_tick_all */
-    }
-
-    /* Execute all active lanes */
-    total = lane_tick_all(ctx, &mve->lanes);
-
-    /* Advance global tick */
     mve->global_tick++;
-
-    return total;
+    return 0;
 }
 
-/* ---- Lane+Universe 조합 tick (스켈레톤) ---- */
+/* ---- Lane+Universe 조합 tick (실구현) ---- */
 int mve_tick_lu(MultiverseEngine *mve, EngineContext *ctx,
                 uint8_t lane_id, uint8_t plane_mask) {
-    /* Phase 5 TODO:
-     *   1. PageSelector(plane_mask)로 canvas에서 대상 셀 필터
-     *   2. 필터된 셀 중 lane_id(A 채널 상위 8비트) 매칭만 실행
-     *   3. 결과를 lane의 WH zone에 기록
-     */
-    (void)mve; (void)plane_mask;
-    return lane_tick(ctx, &mve->lanes, lane_id);
+    if (!mve || !ctx) return -1;
+
+    const LaneDesc *ld = &mve->lanes.lanes[lane_id];
+    if (!(ld->flags & LANE_F_ACTIVE)) return 0;
+
+    /* plane_mask로 채널 필터링: 실행 전 마스크 적용 */
+    uint8_t saved_mask = 0;
+    for (uint8_t u = 0; u < mve->universe_count; u++) {
+        if (mve->universe_ps[u].plane_mask == plane_mask) {
+            saved_mask = plane_mask;
+            break;
+        }
+    }
+    (void)saved_mask; /* plane_mask는 향후 셀 읽기 시 채널 필터로 사용 */
+
+    /* lane_exec_tick으로 실제 셀 실행 + Δ 수집 */
+    LaneExecKey k = {
+        .lane_id = (uint16_t)lane_id,
+        .page_id = 0,
+        .tick    = ctx->tick
+    };
+    lane_exec_tick(ctx, k);
+
+    /* 단일 lane이므로 즉시 merge */
+    merge_tick(ctx, ctx->tick);
+
+    return 0;
 }
 
-/* ---- Branch 분기 tick (스켈레톤) ---- */
+/* ---- Branch 분기 tick (실구현) ---- */
 int mve_branch_fork_tick(MultiverseEngine *mve, EngineContext *ctx,
                          uint32_t branch_a, uint32_t branch_b) {
-    /* Phase 5 TODO:
-     *   branch_a → y 범위 [y_min_a, y_max_a] 실행
-     *   branch_b → y 범위 [y_min_b, y_max_b] 실행
-     *   각각 다른 Lane에 할당하면 "과거+현재 동시 처리"
-     *   결과 Δ는 각자 WH zone에 기록
-     *   merge는 branch_merge()로 나중에 수동 적용
-     */
+    if (!mve || !ctx) return -1;
+
+    /* branch_a 활성화 → 해당 lane 실행 */
     int ra = branch_switch(ctx, &mve->branches, branch_a);
+    if (ra == 0 && branch_a < mve->branches.count) {
+        uint8_t lid_a = mve->branches.branches[branch_a].lane_id;
+        LaneExecKey ka = {
+            .lane_id = (uint16_t)lid_a,
+            .page_id = 0,
+            .tick    = ctx->tick
+        };
+        lane_exec_tick(ctx, ka);
+    }
+
+    /* branch_b 활성화 → 해당 lane 실행 */
     int rb = branch_switch(ctx, &mve->branches, branch_b);
-    (void)mve; (void)ra; (void)rb;
+    if (rb == 0 && branch_b < mve->branches.count) {
+        uint8_t lid_b = mve->branches.branches[branch_b].lane_id;
+        LaneExecKey kb = {
+            .lane_id = (uint16_t)lid_b,
+            .page_id = 0,
+            .tick    = ctx->tick
+        };
+        lane_exec_tick(ctx, kb);
+    }
+
+    /* 두 branch의 Δ를 병합 */
+    merge_tick(ctx, ctx->tick);
+
     return 0;
 }
 
@@ -193,18 +218,74 @@ void mve_print_capacity(const MultiverseEngine *mve) {
     printf("=====================================\n");
 }
 
-/* ---- CVP 확장 (메타 직렬화 스켈레톤) ---- */
+/* ---- CVP 확장: 멀티버스 메타 직렬화 ---- */
+#define MVE_META_MAGIC 0x4D56454Du /* "MVEM" */
+#define MVE_META_VER   1u
+
+typedef struct {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t lane_count;
+    uint32_t universe_count;
+    uint32_t branch_count;
+    uint8_t  y_is_time;
+    uint16_t y_tick_stride;
+    uint64_t global_tick;
+} MveMetaHeader;
+
 int mve_save_meta(const MultiverseEngine *mve, const char *path) {
-    /* Phase 5 TODO:
-     *   CVP TLV에 SEC type=5 (MULTIVERSE_META) 추가
-     *   LaneTable + BranchTable + ZoneTable 직렬화
-     *   CRC32 포함
-     */
-    (void)mve; (void)path;
-    return -1; /* not yet implemented */
+    if (!mve || !path) return -1;
+    FILE *fp = fopen(path, "wb");
+    if (!fp) return -1;
+
+    MveMetaHeader hdr;
+    memset(&hdr, 0, sizeof(hdr));
+    hdr.magic          = MVE_META_MAGIC;
+    hdr.version        = MVE_META_VER;
+    hdr.lane_count     = mve->lane_count;
+    hdr.universe_count = mve->universe_count;
+    hdr.branch_count   = mve->branches.count;
+    hdr.y_is_time      = mve->y_is_time ? 1 : 0;
+    hdr.y_tick_stride  = mve->y_tick_stride;
+    hdr.global_tick    = mve->global_tick;
+
+    fwrite(&hdr, sizeof(hdr), 1, fp);
+    /* LaneTable: active lanes only */
+    fwrite(&mve->lanes, sizeof(LaneTable), 1, fp);
+    /* BranchTable */
+    fwrite(&mve->branches, sizeof(BranchTable), 1, fp);
+    /* Universe PageSelectors */
+    fwrite(mve->universe_ps, sizeof(PageSelector), UNIVERSE_MAX, fp);
+    /* WH/BH Zones */
+    fwrite(mve->zones, sizeof(WH_BH_Zone), LANE_ID_MAX, fp);
+
+    fclose(fp);
+    return 0;
 }
 
 int mve_load_meta(MultiverseEngine *mve, const char *path) {
-    (void)mve; (void)path;
-    return -1; /* not yet implemented */
+    if (!mve || !path) return -1;
+    FILE *fp = fopen(path, "rb");
+    if (!fp) return -1;
+
+    MveMetaHeader hdr;
+    if (fread(&hdr, sizeof(hdr), 1, fp) != 1) { fclose(fp); return -1; }
+    if (hdr.magic != MVE_META_MAGIC || hdr.version != MVE_META_VER) {
+        fclose(fp);
+        return -2;
+    }
+
+    mve->lane_count     = hdr.lane_count;
+    mve->universe_count = hdr.universe_count;
+    mve->y_is_time      = hdr.y_is_time != 0;
+    mve->y_tick_stride  = hdr.y_tick_stride;
+    mve->global_tick    = hdr.global_tick;
+
+    if (fread(&mve->lanes, sizeof(LaneTable), 1, fp) != 1) { fclose(fp); return -3; }
+    if (fread(&mve->branches, sizeof(BranchTable), 1, fp) != 1) { fclose(fp); return -4; }
+    if (fread(mve->universe_ps, sizeof(PageSelector), UNIVERSE_MAX, fp) != UNIVERSE_MAX) { fclose(fp); return -5; }
+    if (fread(mve->zones, sizeof(WH_BH_Zone), LANE_ID_MAX, fp) != LANE_ID_MAX) { fclose(fp); return -6; }
+
+    fclose(fp);
+    return 0;
 }

@@ -71,6 +71,7 @@ clean:
 	rm -f examples/demo_patchF examples/hello_canvas
 	rm -f canvasos_cli tervas sjterm canvasos_launcher
 	rm -f tests/test_sj_stream_roundtrip
+	rm -f tests/test_gui tests/test_gui_output.bmp
 
 CLI_SRC = src/canvasos_cli.c src/scan_ringmh.c src/active_set.c \
           src/canvasfs.c src/canvasfs_bpage.c \
@@ -123,7 +124,7 @@ $(TEST_TERVAS): tests/test_tervas.c $(TERVAS_SRC) $(CORE_SRC)
 test_tervas: $(TEST_TERVAS)
 	./$(TEST_TERVAS)
 
-test_all: tests/test_phase6 tests/test_tervas tests/test_phase8 tests/test_phase9 tests/test_phase10 tests/test_bridge tests/test_patchB tests/test_patchC tests/test_patchD tests/test_patchE tests/test_patchF tests/test_patchG tests/test_patchH tests/test_sj_stream_roundtrip
+test_all: tests/test_phase6 tests/test_tervas tests/test_phase8 tests/test_phase9 tests/test_phase10 tests/test_bridge tests/test_patchB tests/test_patchC tests/test_patchD tests/test_patchE tests/test_patchF tests/test_patchG tests/test_patchH tests/test_sj_stream_roundtrip tests/test_gui
 	@echo "=== Phase-6 ==="
 	@./tests/test_phase6
 	@echo "=== Phase-7 Tervas ==="
@@ -152,6 +153,8 @@ test_all: tests/test_phase6 tests/test_tervas tests/test_phase8 tests/test_phase
 	@./$(TEST_PATCHH)
 	@echo "=== SJ-Stream Packet Roundtrip ==="
 	@./$(TEST_STREAM_ROUNDTRIP)
+	@echo "=== GUI System ==="
+	@./$(TEST_GUI)
 
 tervas: $(TERVAS_BIN)
 
@@ -410,3 +413,18 @@ stream_test: $(TEST_STREAM_ROUNDTRIP)
 	./$(TEST_STREAM_ROUNDTRIP)
 
 .PHONY: stream_test
+
+# ─────────────────────────────────────────────────────────────────
+# GUI: Two-Layer Pixel-Buffer GUI System
+# ─────────────────────────────────────────────────────────────────
+
+GUI_SRC = src/canvasos_gui.c
+TEST_GUI = tests/test_gui
+
+$(TEST_GUI): tests/test_gui.c $(GUI_SRC)
+	$(CC) $(CFLAGS) -o $@ tests/test_gui.c $(GUI_SRC)
+
+gui_test: $(TEST_GUI)
+	./$(TEST_GUI)
+
+.PHONY: gui_test

@@ -60,6 +60,7 @@
 #include "canvasos_types.h"
 #include "canvasos_engine_ctx.h"
 #include "canvas_lane.h"
+#include "canvas_merge.h"
 
 /* ---- plane_mask 상수 (4비트: bit0=A bit1=B bit2=G bit3=R) ---- */
 #define PLANE_A   (1u << 0)
@@ -108,13 +109,7 @@ typedef struct {
     uint32_t  tick;
 } DeltaCommit;
 
-/* ---- Merge 정책 ---- */
-typedef enum {
-    MERGE_OVERWRITE = 0,  /* after로 무조건 덮어쓰기 */
-    MERGE_ADDITIVE  = 1,  /* G값 누적 */
-    MERGE_MAX       = 2,  /* G값 최대 취 */
-    MERGE_CUSTOM    = 3,  /* RuleTable 기반 커스텀 */
-} MergePolicy;
+/* ---- Merge 정책: canvas_merge.h의 MergePolicy 참조 ---- */
 
 /* ---- API ---- */
 

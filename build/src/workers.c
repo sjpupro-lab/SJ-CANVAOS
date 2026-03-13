@@ -8,6 +8,7 @@
 #include "../include/canvasos_workers.h"
 #include "../include/canvas_determinism.h"
 #include "../include/engine_time.h"
+#include "../include/lane_exec.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,8 +92,15 @@ static void *worker_thread(void *arg) {
 
         if (pool->lt) {
             for (int lid = w->lane_start; lid < w->lane_end; lid++) {
-                int n = lane_tick(pool->ctx, pool->lt, (uint8_t)lid);
-                w->cells_executed += (uint32_t)(n > 0 ? n : 0);
+                const LaneDesc *ld = &pool->lt->lanes[lid];
+                if (!(ld->flags & LANE_F_ACTIVE)) continue;
+                LaneExecKey k = {
+                    .lane_id = (uint16_t)lid,
+                    .page_id = 0,
+                    .tick    = pool->ctx->tick
+                };
+                lane_exec_tick(pool->ctx, k);
+                w->cells_executed++;
             }
         }
         w->ticks_run++;
@@ -174,14 +182,13 @@ int workers_run_tick(WorkerPool *pool) {
     /* 틱 완료 배리어 */
     sjbarrier_wait(&pool->barrier_end);
 
-    /* [W-3] merge: lane_id 오름차순 */
+    /* [W-3] merge: lane_exec_tick이 s_deltas[]에 Δ를 수집했으므로
+     * merge_tick()이 lane_id 오름차순으로 병합 + BH 압축 수행 */
     for (int i = 0; i < pool->thread_count; i++) {
-        Worker *w = &pool->workers[i];
-        if (w->delta_count > 0)
-            merge_run(pool->ctx, w->delta_buf, w->delta_count, pool->merge_cfg);
-        pool->total_cells += w->cells_executed;
+        pool->total_cells += pool->workers[i].cells_executed;
     }
 
+    merge_tick(pool->ctx, pool->ctx->tick);
     engctx_tick(pool->ctx);
     pool->total_ticks++;
     return 0;

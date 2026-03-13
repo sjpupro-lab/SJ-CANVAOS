@@ -40,6 +40,7 @@
 #include "../include/canvasos_syscall.h"
 #include "../include/canvasos_vm.h"
 #include "../include/canvasos_shell.h"
+#include "../include/canvasos_fd.h"
 
 /* ═══════════════════════════════════════════════════════════
  *  CANVAS MEMORY
@@ -178,7 +179,9 @@ static int boot_sequence(void) {
     syscall_set_tables(&g_proctable, &g_pipetable);
     syscall_init();
     vm_bridge_init(&g_proctable, &g_pipetable);
-    boot_line(BGRN "P11" CLR, "Phase-11: proc/pipe/syscall/vm-bridge", 1);
+    fd_table_init();
+    fd_set_pipe_table(&g_pipetable);
+    boot_line(BGRN "P11" CLR, "Phase-11: proc/pipe/syscall/vm-bridge/fd", 1);
 
     /* Tick */
     engctx_tick(&g_ctx);

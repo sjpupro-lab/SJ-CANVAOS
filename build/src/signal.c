@@ -68,10 +68,32 @@ int sig_check(ProcTable *pt, uint32_t pid) {
             (void)proc_exit(pt, pid, 139);
             break;
         case SIG_CHILD:
+            /* 자식 프로세스 종료 통지: WH에 기록 */
+            sig_write_wh(pt, p, sig);
+            break;
         case SIG_USR1:
         case SIG_USR2:
+            /* 사용자 시그널: WH에 기록 + 에너지 충전(USR1=+64, USR2=+128) */
+            sig_write_wh(pt, p, sig);
+            if (p->energy < 255u) {
+                uint16_t boost = (sig == SIG_USR1) ? 64u : 128u;
+                p->energy = (uint8_t)((p->energy + boost > 255u) ? 255u : p->energy + boost);
+                if (p->state == PROC_SLEEPING) {
+                    p->state = PROC_RUNNING;
+                    gate_open_space_ctx(pt->ctx, p->space);
+                }
+            }
+            break;
         case SIG_ALARM:
+            /* 알람: 프로세스를 RUNNING으로 깨움 + WH 기록 */
+            sig_write_wh(pt, p, sig);
+            if (p->state == PROC_SLEEPING || p->state == PROC_BLOCKED) {
+                p->state = PROC_RUNNING;
+                gate_open_space_ctx(pt->ctx, p->space);
+            }
+            break;
         default:
+            sig_write_wh(pt, p, sig);
             break;
         }
     }
